@@ -7,6 +7,8 @@ from scipy.special import logsumexp
 
 class GaussianMixture(torch.nn.Module):
     """
+https://github.com/ldeecke/gmm-torch/blob/master/gmm.py    
+
     Fits a mixture of k=1,..,K Gaussians to the input data (K is supplied via n_components). Input tensors are expected to be flat with dimensions (n: number of samples, d: number of features).
     The model then extends them to (n, 1, d).
     The model parametrization (mu, sigma) is stored as (1, k, d), and probabilities are shaped (n, k, 1) if they relate to an individual sample, or (1, k, 1) if they assign membership probabilities to one of the mixture components.
