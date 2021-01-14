@@ -101,3 +101,20 @@ class Encoder(nn.Module):
         output = self.dense2(output)
         
         return output
+    
+    
+    
+class Decoder(nn.Module):
+    def __init__(self, size_embedding):
+        self.dense1 = nn.Linear(in_features=size_embedding, out_features=512)
+        self.dense2 = nn.Linear(in_features=512, out_features=512)
+        self.dense3 = nn.Linear(in_features=512, out_features=512)
+        self.dense4 = nn.Linear(in_features=512, out_features=512)
+    
+    def forward(self, x):
+        x = F.relu(self.dense1(x))
+        x = F.relu(self.dense2(x))
+        x = F.relu(self.dense3(x))
+        x = F.relu(self.dense4(x))
+        
+        return x
