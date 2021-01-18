@@ -84,3 +84,41 @@ class Decoder(nn.Module):
         x = F.relu(self.dense4(x))
         
         return x
+    
+    
+    
+class Relational(nn.Module):
+    def __init__(self,d_model, nhead, dff, nlayers, input_size, dropout = 0):
+        super(Relational, self).__init__()
+        from torch.nn import TransformerDecoderLayer, TransformerDecoder
+        self.dense1 = nn.Linear(input_size, d_model)
+        decoder_layers = TransformerDecoderLayer(d_model, nhead, dff, dropout)
+        self.transformer_decoder = TransformerDecoder(decoder_layers, nlayers)
+        #self.dense2 = nn.Linear(d_model, size_embedding)
+        #self.gmm = 
+    
+    def get_last_time_step(self, tensor, stroke_lengths):
+        
+        embeddingd_lt = []
+        
+        for pos_embedding in range(tensor.shape[0]):
+            embedding = tensor[pos_embedding, stroke_lengths[pos_embedding]-1,:]
+            embeddingd_lt.append(embedding)
+        
+        embeddingd_lt = torch.vstack(embeddingd_lt) 
+        
+        return embeddingd_lt
+    
+    
+    def forward(self, src, src_mask):
+        #src = self.pos_encoder(src)
+        output = self.dense1(src)
+        #print(output[:,None,:].shape)
+        output = self.transformer_decoder(output[:,None,:], output[:,None,:])
+         
+        #output = self.get_last_time_step(output, stroke_lengths)
+        output = output[:,-1,:]
+        
+        #output = self.gmm(output)
+        
+        return output
