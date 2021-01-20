@@ -8,7 +8,7 @@ import math
 import numpy as np
 from math import pi
 from scipy.special import logsumexp
-from .gmm_joel import *
+from .gmm import *
 
 class PositionalEncoding(nn.Module):
 
@@ -27,8 +27,6 @@ class PositionalEncoding(nn.Module):
     def forward(self, x):
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
-
-    
     
 class Encoder(nn.Module):
     def __init__(self,d_model, nhead, dff, nlayers, size_embedding, dropout = 0):
@@ -41,7 +39,6 @@ class Encoder(nn.Module):
         self.dense2 = nn.Linear(d_model, size_embedding)
         #self.init_weights()
     
-    
     def get_last_time_step(self, tensor, stroke_lengths):
         
         embeddingd_lt = []
@@ -53,7 +50,6 @@ class Encoder(nn.Module):
         embeddingd_lt = torch.vstack(embeddingd_lt) 
         
         return embeddingd_lt
-    
     
     def forward(self, src, stroke_lengths, src_mask):
         #src = self.pos_encoder(src)
@@ -67,57 +63,118 @@ class Encoder(nn.Module):
         
         return output
     
-    
-    
 class Decoder(nn.Module):
-    def __init__(self, size_embedding):
-        self.dense1 = nn.Linear(in_features=size_embedding, out_features=512)
-        self.dense2 = nn.Linear(in_features=512, out_features=512)
-        self.dense3 = nn.Linear(in_features=512, out_features=512)
-        self.dense4 = nn.Linear(in_features=512, out_features=512)
-    
+    def __init__(self, size_embedding, num_components, out_units, layer_features: list):
+        super(Decoder, self).__init__()
+        self.dense_layers= nn.ModuleList(
+                [nn.Linear(
+                    in_features=size_embedding, 
+                    out_features=layer_features[0])] +\
+                [nn.Linear(
+                    in_features=layer_features[i], 
+                    out_features= layer_features[i+1]) for i in range(len(layer_features)- 1)]
+        )
+        self.gmm = OutputModelGMMDense(input_size= layer_features[-1], out_units= 2, num_components= num_components) # 2 units for (x,y)
+
     def forward(self, x):
-        x = F.relu(self.dense1(x))
-        x = F.relu(self.dense2(x))
-        x = F.relu(self.dense3(x))
-        x = F.relu(self.dense4(x))
-        
+
+        for layer in self.dense_layers:
+            x = F.relu(layer(x))
+        output_gmm = self.gmm(x)
+        strokes_out = self.gmm.draw_sample(outputs=output_gmm, greedy=True)
         return x
     
     
     
-class Relational(nn.Module):
-    def __init__(self,d_model, nhead, dff, nlayers, input_size, dropout = 0):
-        super(Relational, self).__init__()
+class TransformerGMM(nn.Module):
+    def __init__(self,d_model, nhead, dff, nlayers, input_size, num_components, out_units, dropout = 0):
+        super(TransformerGMM, self).__init__()
         from torch.nn import TransformerDecoderLayer, TransformerDecoder
         self.dense1 = nn.Linear(input_size, d_model)
         decoder_layers = TransformerDecoderLayer(d_model, nhead, dff, dropout)
         self.transformer_decoder = TransformerDecoder(decoder_layers, nlayers)
-        #self.dense2 = nn.Linear(d_model, size_embedding)
-        #self.gmm = 
-    
-    def get_last_time_step(self, tensor, stroke_lengths):
+        self.dense2 = nn.Linear(d_model, dff*2) #[256 256]
+        self.dense3 = nn.Linear(dff*2, dff) #[256 - 512 - 256]
+        self.gmm = OutputModelGMMDense(input_size=dff, out_units=out_units, num_components=num_components)
+        
+    def get_last_stroke(self, tensor, num_strokes):
         
         embeddingd_lt = []
         
         for pos_embedding in range(tensor.shape[0]):
-            embedding = tensor[pos_embedding, stroke_lengths[pos_embedding]-1,:]
+            embedding = tensor[pos_embedding, num_strokes[pos_embedding]-1,:]
             embeddingd_lt.append(embedding)
         
         embeddingd_lt = torch.vstack(embeddingd_lt) 
         
         return embeddingd_lt
-    
-    
-    def forward(self, src, src_mask):
+
+    def forward(self, src, num_strokes, target_cond, src_mask):
         #src = self.pos_encoder(src)
         output = self.dense1(src)
         #print(output[:,None,:].shape)
-        output = self.transformer_decoder(output[:,None,:], output[:,None,:])
-         
-        #output = self.get_last_time_step(output, stroke_lengths)
-        output = output[:,-1,:]
+        output = self.transformer_decoder(output, output)
+        output = self.dense2(output) #512,256 [256, feedforward: (512, 256)]
+        output = self.dense3(output)
+        output = self.get_last_stroke(output, num_strokes)
         
-        #output = self.gmm(output)
+        output_gmm = self.gmm(output)
+
+        out = self.gmm.draw_sample(outputs=output_gmm, greedy=True)
         
-        return output
+        return out
+
+class CoSEModel(nn.Module):
+    def __init__(self,
+                enc_d_model = 64,
+                enc_nhead = 4,
+                enc_dff = 128,
+                enc_n_layers = 6,
+                enc_dropout = 0,
+                rel_d_model = 64,
+                rel_nhead = 4,
+                rel_dff = 256,
+                rel_n_layers = 6,
+                rel_dropout = 0,
+                rel_gmm_num_components = 20,
+                dec_gmm_num_components = 20,
+                layer_features = [512,512,512,512],
+                size_embedding = 8,
+        ):
+        super(CoSEModel, self).__init__()
+        self.encoder = Encoder(d_model=enc_d_model, nhead=enc_nhead, dff=enc_dff
+                                , nlayers=enc_n_layers, size_embedding=size_embedding, dropout=enc_dropout)
+        self.decoder = Decoder(size_embedding=size_embedding, num_components=dec_gmm_num_components
+                                , out_units=2, layer_features=layer_features)
+        self.position_predictive_model = TransformerGMM(d_model = rel_d_model,nhead=rel_nhead,
+                                                        dff=rel_dff,n_layers=rel_n_layers,
+                                                        input_size= size_embedding + 2, num_components= rel_gmm_num_components,
+                                                        out_units = 2, dropout = rel_dropout
+                                                        )
+        self.embedding_predictive_model = TransformerGMM(d_model = rel_d_model, nhead = rel_nhead,
+                                                         dff = rel_dff, nlayers = rel_n_layers,
+                                                         input_size= size_embedding + 4, num_components = rel_gmm_num_components,
+                                                         out_units = size_embedding, dropout = rel_dropout
+                                                         )
+
+    def tranform2image(self, stroke):
+        pass
+
+    def forward(self, diagrama):
+        
+        out = self.encoder(diagrama, stroke_lengths, src_mask)
+        out = self.position_predictive_model(out)
+        out = self.embedding_predictive_model(out)
+        out = self.decoder(out)
+        stroke_image = self.tranform2image(out)
+
+        return stroke_image        
+        
+    def fit(self):
+
+        pass
+        
+    def load_weights(self, path_weights):
+        pass
+
+
