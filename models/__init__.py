@@ -8,8 +8,7 @@ import math
 import numpy as np
 from math import pi
 from scipy.special import logsumexp
-from .gmm import *
-
+from .gmm_joel import *
 
 class PositionalEncoding(nn.Module):
 

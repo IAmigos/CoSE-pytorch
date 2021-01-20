@@ -49,7 +49,7 @@ class OutputModelGMMDense(nn.Module):
         is_2d = True
         if outputs["mu"].dim() == 3:
             is_2d = False
-        out_shape = outputs["mu"].shape()
+        out_shape = outputs["mu"].size()
         batch_size = out_shape[0]
         seq_len = 1 if is_2d else out_shape[1]
         comp_shape = (batch_size, seq_len, self.out_units, self.num_components)
@@ -84,9 +84,7 @@ class OutputModelGMMDense(nn.Module):
         else:
             return sample
 
-
-
-    def draw_sample_every_component(self, outputs, greedy=False):
+    def draw_sample_every_component(self, outputs:dict, greedy:bool=False):
         """Draws a sample from every GMM component.
     
         Args:
@@ -103,7 +101,7 @@ class OutputModelGMMDense(nn.Module):
         sigma = outputs["sigma"]
         pi = outputs["pi"]
 
-        out_shape = mu.shape()
+        out_shape = mu.shape
         seq_len = 1
         if mu.dim() == 3:
             seq_len = out_shape[1]
@@ -120,7 +118,7 @@ class OutputModelGMMDense(nn.Module):
             sample = torch.normal(mu, sigma/4.0)
         return sample, pi
 
-    def draw_sample_from_nth(self, outputs, n, greedy=False):
+    def draw_sample_from_nth(self, outputs:dict, n: int, greedy:bool=False):
         """Draws a sample from the nth component.
 
         Args:
@@ -140,7 +138,7 @@ class OutputModelGMMDense(nn.Module):
         sigma = outputs["sigma"]
         pi = outputs["pi"]
 
-        out_shape = mu.shape()
+        out_shape = mu.shape
         seq_len = 1
         if mu.dim() == 3:
             seq_len = out_shape[1]
