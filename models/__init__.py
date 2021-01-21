@@ -2,12 +2,12 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from tfrecord.torch.dataset import TFRecordDataset
-import tensorflow as tf
+#from tfrecord.torch.dataset import TFRecordDataset
+#import tensorflow as tf
 import math
 import numpy as np
 from math import pi
-from scipy.special import logsumexp
+#from scipy.special import logsumexp
 from .gmm import *
 
 class PositionalEncoding(nn.Module):
@@ -147,7 +147,7 @@ class CoSEModel(nn.Module):
         self.decoder = Decoder(size_embedding=size_embedding, num_components=dec_gmm_num_components
                                 , out_units=2, layer_features=layer_features)
         self.position_predictive_model = TransformerGMM(d_model = rel_d_model,nhead=rel_nhead,
-                                                        dff=rel_dff,n_layers=rel_n_layers,
+                                                        dff=rel_dff, nlayers=rel_n_layers,
                                                         input_size= size_embedding + 2, num_components= rel_gmm_num_components,
                                                         out_units = 2, dropout = rel_dropout
                                                         )
@@ -170,9 +170,12 @@ class CoSEModel(nn.Module):
 
         return stroke_image        
         
-    def fit(self):
-
-        pass
+    def fit(self, n_epochs:int, trainloader):
+        # for epoch in range(n_epochs): #this could change
+        #     running_loss = 0.0
+        #     for i, data in enumerate(trainloader, 0):
+                
+        raise NotImplementedError()
         
     def load_weights(self, path_weights):
         pass

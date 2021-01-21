@@ -16,12 +16,11 @@ class OutputModelGMMDense(nn.Module):
     def __init__(self,
                 input_size,
                 out_units, # dim of mu and sigma
-                num_components,
+                num_components):
                 # sigma_activation=,
                 # kernel_regularizer=None,
                 # bias_regularizer=None,
                 # prefix=""
-                )
         super(OutputModelGMMDense, self).__init__()
 
         self.out_units = out_units

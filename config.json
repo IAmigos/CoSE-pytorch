@@ -1,0 +1,16 @@
+{
+"enc_d_model": 64,
+"enc_nhead": 4,
+"enc_dff":128,
+"enc_n_layers":6,
+"enc_dropout":0,
+"rel_d_model":64,
+"rel_nhead":4,
+"rel_dff":256,
+"rel_n_layers":6,
+"rel_dropout":0,
+"rel_gmm_num_components":20,
+"dec_gmm_num_components":20,
+"layer_features":[512,512,512,512],
+"size_embedding":8
+}
