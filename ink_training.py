@@ -18,4 +18,10 @@ config_ = json.load(open("config.json", 'rb'))
 
 cose_model  = CoSEModel(**config_)
 
-criterion = torch.nn.
+#TODO
+#Crear dummies con los shapes que entran a cada modelo
+#forward del embedding (Joel)
+#procesamiento previo al relacional (agregar un config) (Alex)
+#forward del relacional (Stev)
+#forward del decoder (Alex)
+#transform2image (Daniel)

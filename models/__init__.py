@@ -171,10 +171,6 @@ class CoSEModel(nn.Module):
         return stroke_image        
         
     def fit(self, n_epochs:int, trainloader):
-        # for epoch in range(n_epochs): #this could change
-        #     running_loss = 0.0
-        #     for i, data in enumerate(trainloader, 0):
-                
         raise NotImplementedError()
         
     def load_weights(self, path_weights):
