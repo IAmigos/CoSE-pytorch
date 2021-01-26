@@ -190,7 +190,7 @@ def logli_gmm_logsumexp(x, mu, sigma, coefficient):
 
     var = torch.maximum(1e-6 * torch.ones_like(sigma_), torch.square(sigma_))
     
-    log_normal = -0.5 * torch.sum(input_tensor=(torch.log(2 * np.pi * var) + torch.square(x_ - mu_)/var), 2)
+    log_normal = -0.5 * torch.sum(torch.log(2 * np.pi * var) + torch.square(x_ - mu_)/var, 2)
 
     nll = torch.logsumexp(log_coeff + log_normal, dim=-1, keepdim=True)
     if expanded:
