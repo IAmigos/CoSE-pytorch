@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from data.loaders import *
 from models import *
 import json
+from models import *
 
 batchdata = BatchCoSELoader(path = "D:\Projects\RC-PWC2020\data",
                           filenames={"inputs_file" : "inputs_list_based.pkl",
@@ -25,3 +26,19 @@ cose_model  = CoSEModel(**config_)
 #forward del relacional (Stev)
 #forward del decoder (Alex)
 #transform2image (Daniel)
+config = {"input_type": "hybrid",
+                 "num_predictive_inputs": 32,
+                 "replace_padding": True,
+                 "end_positions": False,
+                 "stop_predictive_grad": False}
+
+def train(config_file, use_wandb=True):
+
+    cose = CoSEModel(config_file, use_wandb)
+    cose.fit()
+
+if __name__=='__main__':
+    args = parse_arguments()
+    use_wandb = args.wandb
+
+    train('config.json', use_wandb=True)
