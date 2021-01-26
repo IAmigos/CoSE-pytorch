@@ -55,7 +55,7 @@ class Encoder(nn.Module):
         #src = self.pos_encoder(src)
         output = self.dense1(src)
         output = self.pos_encoder(output)
-        output = self.transformer_encoder(output, src_mask)
+        output = self.transformer_encoder(output, src_mask).permute(1,0,2)
      
         output = self.get_last_time_step(output, stroke_lengths)
         
@@ -109,7 +109,7 @@ class TransformerGMM(nn.Module):
         
         return embeddingd_lt
 
-    def forward(self, src, num_strokes, target_cond, src_mask):
+    def forward(self, src, num_strokes, src_mask):
         #src = self.pos_encoder(src)
         output = self.dense1(src)
         #print(output[:,None,:].shape)
@@ -118,11 +118,11 @@ class TransformerGMM(nn.Module):
         output = self.dense3(output)
         output = self.get_last_stroke(output, num_strokes)
         
-        output_gmm = self.gmm(output)
+        out_mu, out_sigma, out_pi = self.gmm(output)
 
-        out = self.gmm.draw_sample(outputs=output_gmm, greedy=True)
+        output = self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=True)
         
-        return out
+        return output
 
 class CoSEModel(nn.Module):
     def __init__(self,
