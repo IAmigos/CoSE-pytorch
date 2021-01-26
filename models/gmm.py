@@ -29,34 +29,34 @@ class OutputModelGMMDense(nn.Module):
 
         # out_size = (mu, sigma) * num_components + num_components ( para K)
         self.component_size = out_units * num_components
-        self.out_size = 2 * self.num_components + num_components
+        self.out_size = 2 * self.component_size + num_components
         self.layer_out = nn.Linear(input_size, self.out_size, bias=False)
         
     def forward(self, inputs):
         out_ = self.layer_out(inputs)
-        out_dict = dict()
-        out_mu, out_sigma, out_pi = torch.tensor_split(
-            out_, [self.component_size, 2*self.component_size]) # (self.component_size, self.component_size, self.num_components)
-        out_dict["mu"] = out_mu 
-        out_dict["sigma"] = torch.exp(out_sigma)
-        out_dict["pi"] = torch.nn.functional.softmax(out_pi)
-        return out_dict
+        #out_dict = dict()
+        out_mu, out_sigma, out_pi = torch.split(
+            out_, [self.component_size, self.component_size, self.num_components],dim=1) # (self.component_size, self.component_size, self.num_components)
+        #out_dict["mu"] = out_mu 
+        out_sigma = torch.exp(out_sigma)
+        out_pi = torch.nn.functional.softmax(out_pi)
+        return out_mu, out_sigma, out_pi
 
-    def draw_sample(self, outputs: dict, greedy:bool=False, greedy_mu:bool=True, temp:float =0.5):
+    def draw_sample(self, out_mu, out_sigma, out_pi, greedy:bool=False, greedy_mu:bool=True, temp:float =0.5):
         '''
         Obtains 2D strokes from mu, sigma, pis returned by GMM
         '''
         is_2d = True
-        if outputs["mu"].dim() == 3:
+        if out_mu.dim() == 3:
             is_2d = False
-        out_shape = outputs["mu"].size()
+        out_shape = out_mu.size()
         batch_size = out_shape[0]
         seq_len = 1 if is_2d else out_shape[1]
         comp_shape = (batch_size, seq_len, self.out_units, self.num_components)
         #reshapes mu and sigma according to comp_shape
-        pi = outputs["pi"]
-        mu = outputs["mu"].reshape(comp_shape)
-        sigma = outputs["sigma"].reshape(comp_shape)
+        pi = out_pi
+        mu = out_mu.reshape(comp_shape)
+        sigma = out_sigma.reshape(comp_shape)
         #permute variables (?, seq_len, out_units, num_components)
         mu = mu.permute(0, 1, 3, 2) 
         sigma = sigma.permute(0, 1, 3, 2)
@@ -71,8 +71,8 @@ class OutputModelGMMDense(nn.Module):
             logits = torch.log1p(probs_adjusted)
             comp_indexes = torch.multinominal(logits, 1).reshape(-1, seq_len) #multinomial distribution is categorical
         #selects components of mu and sigma according to indexes selected
-        component_mu = mu.index_select(dim = 3, index = comp_indexes[-1]).squeeze(dim = 3)
-        component_sigma = sigma.index_select(dim = 3, index = comp_indexes[-1]).squeeze(dim = 3)
+        component_mu = mu.index_select(dim = 2, index = comp_indexes[-1]).squeeze(dim = 2)
+        component_sigma = sigma.index_select(dim = 2, index = comp_indexes[-1]).squeeze(dim = 2)
         #when greedy_mu component mu is the one calculated
         if greedy_mu:
             sample = component_mu
@@ -80,7 +80,7 @@ class OutputModelGMMDense(nn.Module):
         else:
             sample = torch.normal(mean = component_mu, std = component_sigma*(temp^2))
         if is_2d:
-            return sample.squeeze() #output shape: (?, 2)
+            return sample.squeeze(dim=1) #output shape: (?, 2)
         else:
             return sample
 
