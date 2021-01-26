@@ -52,7 +52,8 @@ def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_st
         context_pos = torch.cat([start_pos, end_pos], dim=-1)
     else:
         context_pos = gather_indexes(start_pos_base, all_input_indexes, replace_padding = True)
-    return pred_inputs, pred_input_seq_len, context_pos, pred_targets
+    target_pos = torch.stack([start_pos_base[i][j] for i,j in gather_target_index])
+    return pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos
 
 def gather_indexes(base_tensor, index_tensor, replace_padding = True):
     '''
