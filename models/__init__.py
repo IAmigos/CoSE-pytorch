@@ -11,6 +11,7 @@ from math import pi
 from .gmm import *
 from utils import *
 import wandb
+from tqdm import tqdm
 
 class PositionalEncoding(nn.Module):
 
@@ -122,9 +123,13 @@ class TransformerGMM(nn.Module):
         
         out_mu, out_sigma, out_pi = self.gmm(output)
 
-        output = self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=True)
+        #output = self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=True)
         
-        return output
+        return out_mu, out_sigma, out_pi
+
+    def draw_sample(self, out_mu, out_sigma, out_pi):
+        return self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=True)
+
 
 class CoSEModel(nn.Module):
     def __init__(self,
@@ -156,20 +161,30 @@ class CoSEModel(nn.Module):
 
     def init_model(self, device, config, use_wandb=True):
 
-        encoder = Encoder(d_model=enc_d_model, nhead=enc_nhead, dff=enc_dff
-                                , nlayers=enc_n_layers, size_embedding=size_embedding, dropout=enc_dropout)
-        decoder = Decoder(size_embedding=size_embedding, num_components=dec_gmm_num_components
-                                , out_units=2, layer_features=layer_features)
-        position_predictive_model = TransformerGMM(d_model = rel_d_model,nhead=rel_nhead,
-                                                        dff=rel_dff, nlayers=rel_n_layers,
-                                                        input_size= size_embedding + 2, num_components= rel_gmm_num_components,
-                                                        out_units = 2, dropout = rel_dropout
-                                                        )
-        embedding_predictive_model = TransformerGMM(d_model = rel_d_model, nhead = rel_nhead,
-                                                         dff = rel_dff, nlayers = rel_n_layers,
-                                                         input_size= size_embedding + 4, num_components = rel_gmm_num_components,
-                                                         out_units = size_embedding, dropout = rel_dropout
-                                                         )
+        encoder = Encoder(d_model=self.config.enc_d_model, nhead=self.config.enc_nhead, dff=self.config.enc_dff,
+                          nlayers=self.config.enc_n_layers, size_embedding=self.config.size_embedding, dropout=self.config.enc_dropout)
+                    
+        decoder = Decoder(size_embedding=self.config.size_embedding, num_components=self.config.dec_gmm_num_components,
+                          out_units=2, layer_features=self.config.dec_layer_features)
+        
+        position_predictive_model = TransformerGMM(d_model=self.config.rel_d_model,nhead=self.config.rel_nhead,
+                                                   dff=self.config.rel_dff, nlayers=self.config.rel_n_layers,
+                                                   input_size= self.config.size_embedding + 2,
+                                                   num_components= self.config.rel_gmm_num_components,
+                                                   out_units = 2, dropout = self.config.rel_dropout
+                                                  )
+
+        embedding_predictive_model = TransformerGMM(d_model = self.config.rel_d_model, nhead = self.config.rel_nhead,
+                                                    dff = self.config.rel_dff, nlayers = self.config.rel_n_layers,
+                                                    input_size= self.config.size_embedding + 4,
+                                                    num_components = self.config.rel_gmm_num_components,
+                                                    out_units = self.config.size_embedding, dropout = self.config.rel_dropout
+                                                  )
+
+        encoder.to(device)
+        decoder.to(device)
+        position_predictive_model.to(device)
+        embedding_predictive_model.to(device)
 
         if use_wandb:
             wandb.watch(encoder, log="all")
@@ -180,9 +195,10 @@ class CoSEModel(nn.Module):
         return (encoder, decoder, position_predictive_model, embedding_predictive_model)
 
 
+
     def init_optimizers(self):
         list_autoencoder = list(self.encoder.parameters()) + list(self.decoder.parameters())
-        optimizer_ae = torch.optim.Adam(list_autoencoder, lr=config.lr_ae)
+        optimizer_ae = torch.optim.Adam(list_autoencoder, lr=self.config.lr_ae)
 
         list_pos_pred = list(self.position_predictive_model)
         optimizer_pos_pred = torch.optim.Adam(list_pos_pred, lr=self.config.lr_pos_pred)
@@ -192,6 +208,90 @@ class CoSEModel(nn.Module):
 
         
         return (optimizer_ae, optimizer_pos_pred, optimizer_emb_pred)
+
+
+
+    def train_step(self, train_loader, optimizers):
+
+        optimizer_ae, optimizer_pos_pred, optimizer_emb_pred = optimizers    
+
+        self.encoder.train()
+        self.decoder.train()
+        self.embedding_predictive_model.train()
+        self.position_predictive_model.train()
+
+        for batch_input, batch_target in iter(train_loader):
+
+            self.encoder.zero_grad()
+            self.decoder.zero_grad()
+            self.embedding_predictive_model.zero_grad()
+            self.position_predictive_model.zero_grad()
+            
+            # Parsing inputs
+            enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input)
+            # Creating sequence length mask
+            _, look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs)
+            # Encoder forward
+            encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, look_ahead_mask)
+            # decoder forward
+
+            # Random/Ordered Sampling
+            pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos = random_index_sampling(encoder_out,inputs_start_coord,
+                                                                                            inputs_end_coord,num_strokes_x_diagram_tensor,
+                                                                                            input_type =self.config.input_type,
+                                                                                            num_predictive_inputs = self.config.num_predictive_inputs,
+                                                                                            replace_padding = self.config.replace_padding,
+                                                                                            end_positions = self.config.end_positions
+                                                                                            )
+            # Detaching gradients of pred_targets (Teacher forcing)
+            pred_targets.detach()
+            if config["stop_predictive_grad"]:
+                pred_inputs.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
+            # Concatenating inputs for relational model
+            pos_model_inputs = torch.cat([pred_inputs, context_pos], dim = 2)
+            pred_model_inputs = torch.cat([pred_inputs, context_pos, target_pos.unsqueeze(dim = 1).repeat(1, pred_inputs.shape[1], 1)], dim = 2)
+            # Predictive model Teacher forcing
+            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, num_strokes_x_diagram_tensor.numpy(), None)
+            # Position model 
+            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, num_strokes_x_diagram_tensor.numpy(), None)
+
+            #loss_ae = logli_gmm_logsumexp(x, mu, sigma, coefficient)
+            loss_pos_pred = logli_gmm_logsumexp(target_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi)
+            loss_emb_pred = logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi)
+            
+            loss_total = loss_pos_pred + loss_emb_pred + loss_ae
+
+            loss_total.backward()
+
+            optimizer_pos_pred.step()
+            optimizer_emb_pred.step()
+
+        return (loss_ae, loss_pos_pred, loss_emb_pred, loss_total)
+
+
+    def save_weights(self, path_gen, path_sub, use_wandb=True):
+
+        torch.save(self.encoder.state_dict(), os.path.join(path_sub, 'encoder.pth'))
+        torch.save(self.decoder.state_dict(), os.path.join(path_sub, 'decoder.pth'))
+        torch.save(self.embedding_predictive_model.state_dict(), os.path.join(path_sub, 'emb_pred.pth'))
+        torch.save(self.position_predictive_model.state_dict(), os.path.join(path_sub, 'pos_pred.pth'))
+
+        if use_wandb:
+            wandb.save(os.path.join(path_sub,'*.pth'),base_path='/'.join(path_gen.split('/')[:-2]))
+
+
+    def load_weights(self):
+        self.e_shared.load_state_dict(
+            torch.load(self.config.model_path + 'encoder.pth',map_location=torch.device(self.device)))
+
+        self.d_shared.load_state_dict(
+            torch.load(self.config.model_path + 'decoder.pth',map_location=torch.device(self.device)))
+
+        self.d2.load_state_dict(
+            torch.load(self.config.model_path + 'emb_pred.pth',map_location=torch.device(self.device)))
+
+        self.denoiser.load_state_dict(
+            torch.load(self.config.model_path + 'pos_pred.pth',map_location=torch.device(self.device)))
 
 
     def fit(self, n_epochs:int, trainloader):
@@ -206,45 +306,51 @@ class CoSEModel(nn.Module):
             print("Training in CPU")
 
         if self.config.save_weights:
-            path_save_weights = config.root_path + config.save_path
+            path_save_weights = self.config.root_path + self.config.save_path
         try:
             os.mkdir(path_save_weights)
         except OSError:
             pass
 
-        optimizer_ae, optimizer_pos_pred, optimizer_emb_pred = self.init_optimizers()
+        #optimizer_ae, optimizer_pos_pred, optimizer_emb_pred 
+        optimizers = self.init_optimizers()
+    
 
-        train_loader = get_batch_iterator("/data/ajimenez/")
-        for epoch in n_epochs:
-            for batch_input, batch_target in iter(train_loader):
-                # Parsing inputs
-                enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input)
-                # Creating sequence length mask
-                _, look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs)
-                # Encoder forward
-                encoder_out = cose_model.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, look_ahead_mask)
-                # Random/Ordered Sampling
-                pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos = random_index_sampling(encoder_out,inputs_start_coord,
-                                                                                                inputs_end_coord,num_strokes_x_diagram_tensor,
-                                                                                                input_type =config["input_type"],
-                                                                                                num_predictive_inputs = config["num_predictive_inputs"],
-                                                                                                replace_padding = config["replace_padding"],
-                                                                                                end_positions = config["end_positions"]
-                                                                                                )
-                # Detaching gradients of pred_targets (Teacher forcing)
-                pred_targets.detach()
-                if config["stop_predictive_grad"]:
-                    pred_inputs.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
-                # Concatenating inputs for relational model
-                pos_model_inputs = torch.cat([pred_inputs, context_pos], dim = 2)
-                pred_model_inputs = torch.cat([pred_inputs, context_pos, target_pos.unsqueeze(dim = 1).repeat(1, pred_inputs.shape[1], 1)], dim = 2)
-                # Predictive model Teacher forcing
+        train_loader = get_batch_iterator(self.config.dataset_path))
 
-                # Position model
+        for epoch in tqdm(range(self.config.num_epochs)):
+            loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
+            #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
+            generated_strokes = test_strokes(valid_loader)
 
-                sys.exit(0)
+            if self.use_wandb:
+                wandb.log({"train_epoch":epoch+1,
+                            "Generated strokes": [wandb.Image(img) for img in generated_strokes],
+                            "loss_ae":loss_ae.item(),
+                            "loss_pos_pred":loss_pos_pred.item(),
+                            "loss_emb_pred":loss_emb_pred.item(), 
+                            "loss_total":loss_total.item()})
 
-    def load_weights(self, path_weights):
-        pass
+            if self.config.save_weights and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
+                path_save_epoch = path_save_weights + 'epoch_{}'.format(epoch+1)
+                
+                try:
+                    os.mkdir(path_save_epoch)
+                except OSError:
+                    pass
+
+                self.save_weights(path_save_weights, path_save_epoch, self.use_wandb)
+
+            print("Losses")
+            print('Epoch [{}/{}], Loss autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_ae.item()))
+            print('Epoch [{}/{}], Loss position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
+            print('Epoch [{}/{}], Loss embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_emb_pred.item()))
+            print('Epoch [{}/{}], Loss total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_total.item()))
+        
+        if self.use_wandb:
+            wandb.finish()
+        
+
+
 
 

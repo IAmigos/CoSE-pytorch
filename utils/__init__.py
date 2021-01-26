@@ -2,6 +2,18 @@ from .relational import *
 from .encoder import *
 
 
+def parse_arguments():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-w','--wandb', default=False, action='store_true',
+    help="use weights and biases")
+    ap.add_argument('-nw  ','--no-wandb', dest='wandb', action='store_false',
+    help="not use weights and biases")
+
+    args = ap.parse_args()
+
+    return args
+
+
 def parse_configuration(config_file):
     """Loads config file if a string was passed
         and returns the input if a dictionary was passed.
@@ -22,7 +34,50 @@ def configure_model(config_file, use_wandb=False):
     else:
         config = type("configuration", (object,), {})
 
-    ##completar configuracion   
+    #general config
+    config.use_gpu = config_file["general_config"]["use_gpu"]   
+    config.root_path = config_file["general_config"]["root_path"]
+    config.save_path = config_file["general_config"]["save_path"]
+    config.dataset_path = config_file["general_config"]["dataset_path"]
+    config.num_backups = config_file["general_config"]["num_backups"]
+    config.model_path = config_file["general_config"]["model_path"]
+    config.save_weights = config_file["general_config"]["save_weights"]
+
+    #encoder config
+    config.enc_d_model = config_file['enc_hparams']["enc_d_model"]
+    config.enc_nhead = config_file['enc_hparams']["enc_nhead"]
+    config.enc_dff = config_file['enc_hparams']["enc_dff"]
+    config.enc_n_layers = config_file['enc_hparams']["enc_n_layers"]
+    config.enc_dropout = config_file['enc_hparams']["enc_dropout"]
+    #relational config
+    config.rel_d_model = config_file["rel_hparams"]["rel_d_model"]
+    config.rel_nhead = config_file["rel_hparams"]["rel_nhead"]
+    config.rel_dff = config_file["rel_hparams"]["rel_dff"]
+    config.rel_n_layers = config_file["rel_hparams"]["rel_n_layers"]
+    config.rel_dropout = config_file["rel_hparams"]["rel_dropout"]
+    config.rel_gmm_num_components = config_file["rel_hparams"]["rel_gmm_num_components"]
+    #decoder config
+    config.dec_gmm_num_components = config_file["dec_hparams"]["dec_gmm_num_components"]
+    config.dec_layer_features = config_file["dec_hparams"]["dec_layer_features"]
+    #cose model config
+    config.size_embedding = config_file["cose_model_params"]["size_embedding"]
+    config.num_predictive_inputs = config_file["cose_model_params"]["num_predictive_inputs"]
+    config.end_positions = config_file["cose_model_params"]["end_positions"]
+    #training params config
+    config.input_type = config_file["training_params"]["input_type"]
+    config.replace_padding = config_file["training_params"]["replace_padding"]
+    config.stop_predictive_grad = config_file["training_params"]["stop_predictive_grad"]
+    config.num_epochs = config_file["training_params"]["num_epochs"]
+    config.lr_ae = config_file["training_params"]["lr_ae"]
+    config.lr_pos_pred = config_file["training_params"]["lr_pos_pred"]
+    config.lr_emb_pred = config_file["training_params"]["lr_emb_pred"]
+    
+    ##TODO completar configuracion
+    
+
+    return config
+
+    
 
 def parse_inputs(batch_input):
     enc_inputs = batch_input['encoder_inputs'].squeeze(dim=0)

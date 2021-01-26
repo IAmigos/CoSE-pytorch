@@ -41,4 +41,4 @@ if __name__=='__main__':
     args = parse_arguments()
     use_wandb = args.wandb
 
-    train('config.json', use_wandb=True)
+    train('config.json', use_wandb)
