@@ -12,6 +12,7 @@ from .gmm import *
 from utils import *
 import wandb
 from tqdm import tqdm
+import os
 
 class PositionalEncoding(nn.Module):
 
@@ -197,16 +198,14 @@ class CoSEModel(nn.Module):
         list_autoencoder = list(self.encoder.parameters()) + list(self.decoder.parameters())
         optimizer_ae = torch.optim.Adam(list_autoencoder, lr=self.config.lr_ae)
 
-        list_pos_pred = list(self.position_predictive_model)
+        list_pos_pred = list(self.position_predictive_model.parameters())
         optimizer_pos_pred = torch.optim.Adam(list_pos_pred, lr=self.config.lr_pos_pred)
 
-        list_emb_pred = list(self.embedding_predictive_model)
+        list_emb_pred = list(self.embedding_predictive_model.parameters())
         optimizer_emb_pred = torch.optim.Adam(list_emb_pred, lr=self.config.lr_emb_pred)
 
         
         return (optimizer_ae, optimizer_pos_pred, optimizer_emb_pred)
-
-
 
     def train_step(self, train_loader, optimizers):
 
@@ -225,10 +224,10 @@ class CoSEModel(nn.Module):
             self.position_predictive_model.zero_grad()
             
             # Parsing inputs
-            enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input)
-            t_target_ink = parse_targets(batch_target)
+            enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input,self.device)
+            t_target_ink = parse_targets(batch_target,self.device)
             # Creating sequence length mask
-            _, look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs)
+            _, look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs, self.device)
             # Encoder forward
             encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, look_ahead_mask)
             # decoder forward
@@ -236,6 +235,7 @@ class CoSEModel(nn.Module):
             t_inputs_reshaped = t_inputs.reshape(-1,1)
             decoder_inp = torch.cat([encoder_out_reshaped, t_inputs_reshaped], dim = 1)
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
+            
             # Random/Ordered Sampling
             pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos = random_index_sampling(encoder_out,inputs_start_coord,
                                                                                             inputs_end_coord,num_strokes_x_diagram_tensor,
@@ -261,7 +261,7 @@ class CoSEModel(nn.Module):
             loss_emb_pred = logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi)
             
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
-
+            sys.exit(0)
             loss_total.backward()
 
             optimizer_pos_pred.step()
@@ -295,7 +295,7 @@ class CoSEModel(nn.Module):
             torch.load(self.config.model_path + 'pos_pred.pth',map_location=torch.device(self.device)))
 
 
-    def fit(self, n_epochs:int, trainloader):
+    def fit(self, n_epochs:int = 1):
                         
         if self.use_wandb:
             wandb.init(project="CoSE_Pytorch")

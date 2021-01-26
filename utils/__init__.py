@@ -1,6 +1,9 @@
 from .relational import *
 from .encoder import *
-
+import argparse
+import json
+from data.loaders import *
+from torch.utils.data import DataLoader
 
 def parse_arguments():
     ap = argparse.ArgumentParser()
@@ -78,17 +81,17 @@ def configure_model(config_file, use_wandb=False):
     return config
 
 
-def parse_inputs(batch_input):
-    enc_inputs = batch_input['encoder_inputs'].squeeze(dim=0)
-    t_inputs = batch_input['t_input'].squeeze(dim=0)
-    stroke_len_inputs = batch_input['seq_len'].squeeze(dim=0)
-    inputs_start_coord = batch_input['start_coord'].squeeze(dim = 0)
-    inputs_end_coord = batch_input['end_coord'].squeeze(dim = 0)
-    num_strokes_x_diagram_tensor = batch_input['num_strokes'].squeeze(dim = 0)
+def parse_inputs(batch_input, device):
+    enc_inputs = batch_input['encoder_inputs'].squeeze(dim=0).to(device)
+    t_inputs = batch_input['t_input'].squeeze(dim=0).to(device)
+    stroke_len_inputs = batch_input['seq_len'].squeeze(dim=0).to(device)
+    inputs_start_coord = batch_input['start_coord'].squeeze(dim = 0).to(device)
+    inputs_end_coord = batch_input['end_coord'].squeeze(dim = 0).to(device)
+    num_strokes_x_diagram_tensor = batch_input['num_strokes'].squeeze(dim = 0).to(device)
     return enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor
 
-def parse_targets(batch_target):
-    t_target_ink = batch_target['t_target_ink'].squeeze(dim=0)[:,:2]
+def parse_targets(batch_target, device):
+    t_target_ink = batch_target['t_target_ink'].squeeze(dim=0)[:,:2].to(device)
     return t_target_ink
 
 def get_batch_iterator(path):
