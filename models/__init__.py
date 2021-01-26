@@ -40,8 +40,7 @@ class Encoder(nn.Module):
         encoder_layers = TransformerEncoderLayer(d_model, nhead, dff, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         self.dense2 = nn.Linear(d_model, size_embedding)
-        #self.init_weights()
-    
+
     def get_last_time_step(self, tensor, stroke_lengths):
         
         embeddingd_lt = []
@@ -55,14 +54,14 @@ class Encoder(nn.Module):
         return embeddingd_lt
     
     def forward(self, src, stroke_lengths, src_mask):
-        #src = self.pos_encoder(src)
-        output = self.dense1(src)
+
+        output = self.dense1(src) #init embedding
         output = self.pos_encoder(output)
-        output = self.transformer_encoder(output, src_mask).permute(1,0,2)
+        output = self.transformer_encoder(output, src_mask).permute(1,0,2) #positional encoding + encoder
      
-        output = self.get_last_time_step(output, stroke_lengths)
+        output = self.get_last_time_step(output, stroke_lengths) #fetch last step
         
-        output = self.dense2(output)
+        output = self.dense2(output) #output deterministc embedding (#TODO configurable)
         
         return output
     
@@ -71,7 +70,7 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.dense_layers= nn.ModuleList(
                 [nn.Linear(
-                    in_features=size_embedding, 
+                    in_features=size_embedding + 1, #+1 por los t_inputs 
                     out_features=layer_features[0])] +\
                 [nn.Linear(
                     in_features=layer_features[i], 
@@ -80,15 +79,13 @@ class Decoder(nn.Module):
         self.gmm = OutputModelGMMDense(input_size= layer_features[-1], out_units= 2, num_components= num_components) # 2 units for (x,y)
 
     def forward(self, x):
-
         for layer in self.dense_layers:
             x = F.relu(layer(x))
-        output_gmm = self.gmm(x)
-        strokes_out = self.gmm.draw_sample(outputs=output_gmm, greedy=True)
-        return x
-    
-    
-    
+        out_mu, out_sigma, out_pi = self.gmm(x)
+        strokes_out = self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=True)
+        return strokes_out, out_mu, out_sigma, out_pi
+
+
 class TransformerGMM(nn.Module):
     def __init__(self,d_model, nhead, dff, nlayers, input_size, num_components, out_units, dropout = 0):
         super(TransformerGMM, self).__init__()
@@ -229,12 +226,16 @@ class CoSEModel(nn.Module):
             
             # Parsing inputs
             enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input)
+            t_target_ink = parse_targets(batch_target)
             # Creating sequence length mask
             _, look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs)
             # Encoder forward
             encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, look_ahead_mask)
             # decoder forward
-
+            encoder_out_reshaped = encoder_out.unsqueeze(dim=1).repeat(1,t_inputs.shape[1],1).reshape(-1, encoder_out.shape[-1])
+            t_inputs_reshaped = t_inputs.reshape(-1,1)
+            decoder_inp = torch.cat([encoder_out_reshaped, t_inputs_reshaped], dim = 1)
+            strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
             # Random/Ordered Sampling
             pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos = random_index_sampling(encoder_out,inputs_start_coord,
                                                                                             inputs_end_coord,num_strokes_x_diagram_tensor,
@@ -254,8 +255,8 @@ class CoSEModel(nn.Module):
             emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, num_strokes_x_diagram_tensor.numpy(), None)
             # Position model 
             pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, num_strokes_x_diagram_tensor.numpy(), None)
-
-            #loss_ae = logli_gmm_logsumexp(x, mu, sigma, coefficient)
+            
+            loss_ae = logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi)
             loss_pos_pred = logli_gmm_logsumexp(target_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi)
             loss_emb_pred = logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi)
             
@@ -316,7 +317,7 @@ class CoSEModel(nn.Module):
         optimizers = self.init_optimizers()
     
 
-        train_loader = get_batch_iterator(self.config.dataset_path))
+        train_loader = get_batch_iterator(self.config.dataset_path)
 
         for epoch in tqdm(range(self.config.num_epochs)):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)

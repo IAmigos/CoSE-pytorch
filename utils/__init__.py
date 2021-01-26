@@ -77,7 +77,6 @@ def configure_model(config_file, use_wandb=False):
 
     return config
 
-    
 
 def parse_inputs(batch_input):
     enc_inputs = batch_input['encoder_inputs'].squeeze(dim=0)
@@ -87,6 +86,10 @@ def parse_inputs(batch_input):
     inputs_end_coord = batch_input['end_coord'].squeeze(dim = 0)
     num_strokes_x_diagram_tensor = batch_input['num_strokes'].squeeze(dim = 0)
     return enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor
+
+def parse_targets(batch_target):
+    t_target_ink = batch_target['t_target_ink'].squeeze(dim=0)[:,:2]
+    return t_target_ink
 
 def get_batch_iterator(path):
     batchdata = BatchCoSELoader(path = path,
