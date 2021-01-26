@@ -245,23 +245,26 @@ class CoSEModel(nn.Module):
                                                                                             end_positions = self.config.end_positions
                                                                                             )
             # Detaching gradients of pred_targets (Teacher forcing)
-            pred_targets.detach()
-            if config["stop_predictive_grad"]:
-                pred_inputs.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
+            if config.stop_predictive_grad:
+                pred_inputs = pred_inputs.detach()
+                pred_input_seq_len = pred_input_seq_len.detach()
+                context_pos = context_pos.detach()
+                pred_targets = pred_targets.detach()
+                target_pos = target_pos.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
             # Concatenating inputs for relational model
             pos_model_inputs = torch.cat([pred_inputs, context_pos], dim = 2)
             pred_model_inputs = torch.cat([pred_inputs, context_pos, target_pos.unsqueeze(dim = 1).repeat(1, pred_inputs.shape[1], 1)], dim = 2)
             # Predictive model Teacher forcing
-            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, num_strokes_x_diagram_tensor.numpy(), None)
+            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, pred_input_seq_len.numpy(), None)
             # Position model 
-            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, num_strokes_x_diagram_tensor.numpy(), None)
+            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, pred_input_seq_len.numpy(), None)
             
             loss_ae = logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi)
             loss_pos_pred = logli_gmm_logsumexp(target_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi)
             loss_emb_pred = logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi)
             
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
-            sys.exit(0)
+            #sys.exit(0)
             loss_total.backward()
 
             optimizer_pos_pred.step()
@@ -322,11 +325,11 @@ class CoSEModel(nn.Module):
         for epoch in tqdm(range(self.config.num_epochs)):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
-            generated_strokes = test_strokes(valid_loader)
+            #generated_strokes = test_strokes(valid_loader)
 
             if self.use_wandb:
                 wandb.log({"train_epoch":epoch+1,
-                            "Generated strokes": [wandb.Image(img) for img in generated_strokes],
+                            #"Generated strokes": [wandb.Image(img) for img in generated_strokes],
                             "loss_ae":loss_ae.item(),
                             "loss_pos_pred":loss_pos_pred.item(),
                             "loss_emb_pred":loss_emb_pred.item(), 

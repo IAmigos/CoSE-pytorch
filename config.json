@@ -34,7 +34,7 @@
     },
     "general_config":{
         "use_gpu": true,
-        "root_path":"/",
+        "root_path":"./",
         "save_path":"weights_trained/",
         "dataset_path":"/data/ajimenez/cose/train/",
         "num_backups":5,
