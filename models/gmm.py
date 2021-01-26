@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 
 def adjust_temp(pi_tensor, temp):
@@ -154,3 +155,45 @@ class OutputModelGMMDense(nn.Module):
             sample = torch.normal(mu, sigma/4.0)
         return sample, pi
 
+def logli_gmm_logsumexp(x, mu, sigma, coefficient):
+    """Gaussian mixture model log-likelihood.
+
+    Gaussian components with diagonal covariance matrix. More stable
+    implementation of GMM log-likelihood.
+    Args:
+        x: (batch_size, seq_len, units)
+        mu: (batch_size, seq_len, units*num_components)
+        sigma: std (batch_size, seq_len, units*num_components)
+        coefficient: (batch_size, seq_len, num_components)
+
+    Returns:
+    """
+    expanded = False
+    if len(mu.shape) == 2: # esto nunca pasa :v creo
+        x = torch.unsqueeze(x, 1)
+        mu = torch.unsqueeze(mu, 1)
+        sigma = torch.unsqueeze(sigma, 1)
+        coefficient = torch.unsqueeze(coefficient, 1)
+        expanded = True
+
+    batch_size = mu.shape[0]
+    seq_len = mu.shape[1]
+    feature_gmm_components = mu.shape[2]
+    num_components = coefficient.shape[-1]
+    units = feature_gmm_components // num_components
+
+    
+    mu_ = mu.reshape(batch_size, seq_len, units, num_components)
+    sigma_ = sigma.reshape(batch_size, seq_len, units, num_components)
+    x_ = torch.unsqueeze(x, -1)
+    log_coeff = torch.log(torch.maximum(1e-9 * torch.ones_like(coefficient) , coefficient))
+
+    var = torch.maximum(1e-6 * torch.ones_like(sigma_), torch.square(sigma_))
+    
+    log_normal = -0.5 * torch.sum(input_tensor=(torch.log(2 * np.pi * var) + torch.square(x_ - mu_)/var), 2)
+
+    nll = torch.logsumexp(log_coeff + log_normal, dim=-1, keepdim=True)
+    if expanded:
+        return nll[:, 0]
+    else:
+        return nll
