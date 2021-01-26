@@ -13,6 +13,8 @@ from utils import *
 import wandb
 from tqdm import tqdm
 import os
+torch.cuda.empty_cache()
+
 
 class PositionalEncoding(nn.Module):
 
@@ -243,9 +245,9 @@ class CoSEModel(nn.Module):
                                                                                             num_predictive_inputs = self.config.num_predictive_inputs,
                                                                                             replace_padding = self.config.replace_padding,
                                                                                             end_positions = self.config.end_positions
-                                                                                            )
+                                                                                            , device = self.device)
             # Detaching gradients of pred_targets (Teacher forcing)
-            if config.stop_predictive_grad:
+            if self.config.stop_predictive_grad:
                 pred_inputs = pred_inputs.detach()
                 pred_input_seq_len = pred_input_seq_len.detach()
                 context_pos = context_pos.detach()
