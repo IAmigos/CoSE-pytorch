@@ -34,11 +34,9 @@ class TransformerGMM(nn.Module):
         return embeddingd_lt
 
     def forward(self, src, num_strokes, src_mask):
-        #src = self.pos_encoder(src)
         output = self.dense1(src)
-        #print(output[:,None,:].shape)
         output = self.transformer_decoder(output, output)
-        output = self.dense2(output) #512,256 [256, feedforward: (512, 256)]
+        output = self.dense2(output) 
         output = self.dense3(output)
         output = self.get_last_stroke(output, num_strokes)
         
