@@ -4,6 +4,7 @@ import argparse
 import json
 from data.loaders import *
 from torch.utils.data import DataLoader
+import wandb
 
 def parse_arguments():
     ap = argparse.ArgumentParser()

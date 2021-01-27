@@ -137,9 +137,15 @@ class CoSEModel(nn.Module):
             use_wandb=True
         ):
         super(CoSEModel, self).__init__()
-
-        self.config = configure_model(config_file, use_wandb)
+    
         self.use_wandb = use_wandb
+
+        if self.use_wandb:
+            wandb.init(project="CoSE_Pytorch")
+            wandb.watch_called = False
+
+        self.config = configure_model(config_file, self.use_wandb)
+
         self.device = torch.device("cuda:0" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
@@ -302,9 +308,7 @@ class CoSEModel(nn.Module):
 
     def fit(self, n_epochs:int = 1):
                         
-        if self.use_wandb:
-            wandb.init(project="CoSE_Pytorch")
-            wandb.watch_called = False
+
 
         if self.config.use_gpu and torch.cuda.is_available():
             print("Training in " + torch.cuda.get_device_name(0))  
