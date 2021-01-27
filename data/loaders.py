@@ -18,7 +18,7 @@ class BatchCoSELoader(Dataset):
             for input_key, input_value in self.inputs[input_index].items():
                 self.inputs[input_index][input_key] = torch.from_numpy(input_value)
 
-        for target_index in len(self.targets)
+        for target_index in len(self.targets):
             for target_key, target_value in self.targets[target_index].items():
                 self.targets[target_index][target_key] = torch.from_numpy(target_value)
 
