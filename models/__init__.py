@@ -224,7 +224,7 @@ class CoSEModel(nn.Module):
         self.embedding_predictive_model.train()
         self.position_predictive_model.train()
 
-        for batch_input, batch_target in train_loader:
+        for batch_input, batch_target in iter(train_loader):
 
             self.encoder.zero_grad()
             self.decoder.zero_grad()
