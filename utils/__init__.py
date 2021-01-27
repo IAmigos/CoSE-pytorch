@@ -96,12 +96,11 @@ def parse_targets(batch_target, device):
 
 def get_batch_iterator(path):
     batchdata = BatchCoSELoader(path = path,
-                        filenames={"inputs_file" : "inputs_list_based.pkl",
-                                    "targets_file": "target_list_based.pkl"}
+                        filenames={"inputs_file" : "inputs_list_based_x16.pkl",
+                                    "targets_file": "target_list_based_x16.pkl"}
                     )
 
     train_loader = DataLoader(dataset =batchdata,
                     batch_size = 1, #data is already in batch mode, batch_size = 1 means iterating every .get_next() returns a new batch
-                    num_workers=10
                     )
     return train_loader

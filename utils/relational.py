@@ -43,6 +43,8 @@ def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_st
     start_pos_base = inputs_start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
     end_pos_base = inputs_end_coord.reshape(num_diagrams,padded_max_num_strokes,2)
     #gathering indexes from base tensors
+    #print(gather_target_index)
+    #print("diagram_embedding.shape", diagram_embedding.shape)
     pred_targets = torch.stack([diagram_embedding[i][j] for i,j in gather_target_index])
     pred_inputs = gather_indexes(diagram_embedding, all_input_indexes, replace_padding = True)
     pred_input_seq_len = torch.cat(all_seq_len,dim=0)
@@ -86,22 +88,24 @@ def reshape_stroke2diagram(stroke_embedding,num_strokes_x_diagram_tensor):
     return diagram_embedding, padded_max_n_strokes, min_n_stroke, num_diagrams
 
 def get_random_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_strokes, num_diagrams, min_n_stroke, device):
+    #TODO Revisar
     """Get a randomly generated input set and a target."""
     n_inputs = torch.randint(2, (min_n_stroke+1),size = (1,)).to(device).item()
-    target_indexes = (torch.rand([num_diagrams]).to(device)*num_strokes_x_diagram_tensor).int().reshape(-1,1)
+    target_indexes = (torch.rand([num_diagrams]).to(device)*(num_strokes_x_diagram_tensor - 1)).int().reshape(-1,1) #index
     input_range = torch.arange(start=1, end = padded_max_num_strokes + 1).repeat(num_diagrams,1).to(device)
-    mask = (input_range <= num_strokes_x_diagram_tensor.reshape(-1,1)) & (input_range != target_indexes)
+    mask = ((input_range -1)<= num_strokes_x_diagram_tensor.reshape(-1,1)) & ((input_range -1) != target_indexes)
     input_indexes = torch.multinomial((input_range*mask).float().to(device),n_inputs) - 1
     return input_indexes, target_indexes, n_inputs
 
 def get_ordered_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_strokes, num_diagrams, min_n_stroke, device, random_target = False):
+    #TODO Revisar
     """Get a slice (i.e., window) randomly."""
-    n_inputs = torch.randint(2, (min_n_stroke+1),size = (1,)).to(device).item()
-    start_index = torch.randint(0, min_n_stroke - n_inputs + 1, size = (1,)).to(device).item()
+    n_inputs = torch.randint(2, (min_n_stroke),size = (1,)).to(device).item()
+    start_index = torch.randint(0, min_n_stroke - n_inputs, size = (1,)).to(device).item()
     if not random_target:
         target_indexes = torch.tensor([start_index+n_inputs]).repeat(num_diagrams,1).to(device)
     else:
-        target_indexes = (torch.rand([num_diagrams])*num_strokes_x_diagram_tensor).int().reshape(-1,1).to(device)
+        target_indexes = (torch.rand([num_diagrams])*(num_strokes_x_diagram_tensor - 1)).int().reshape(-1,1).to(device) # index
     input_range = torch.arange(start=1, end = padded_max_num_strokes + 1).repeat(num_diagrams,1).to(device)
     mask = ((input_range - 1)< target_indexes) & ((input_range - 1)>= start_index)
     input_indexes = input_range.masked_select(mask).reshape(num_diagrams, n_inputs)
