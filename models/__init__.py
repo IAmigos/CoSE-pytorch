@@ -257,13 +257,13 @@ class CoSEModel(nn.Module):
             pos_model_inputs = torch.cat([pred_inputs, context_pos], dim = 2)
             pred_model_inputs = torch.cat([pred_inputs, context_pos, target_pos.unsqueeze(dim = 1).repeat(1, pred_inputs.shape[1], 1)], dim = 2)
             # Predictive model Teacher forcing
-            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, pred_input_seq_len.int().numpy(), None)
+            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, pred_input_seq_len.int(), None)
             # Position model 
-            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, pred_input_seq_len.int().numpy(), None)
+            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, pred_input_seq_len.int(), None)
             
-            loss_ae = logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi)
-            loss_pos_pred = logli_gmm_logsumexp(target_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi)
-            loss_emb_pred = logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi)
+            loss_ae = logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi).sum()
+            loss_pos_pred = logli_gmm_logsumexp(target_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).sum()
+            loss_emb_pred = logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi).sum()
             
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
             #sys.exit(0)
