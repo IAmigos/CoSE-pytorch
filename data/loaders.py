@@ -14,11 +14,11 @@ class BatchCoSELoader(Dataset):
         self.inputs = pickle.load(open(os.path.join(path, filenames["inputs_file"]), 'rb'))
         self.targets = pickle.load(open(os.path.join(path, filenames["targets_file"]), 'rb'))
 
-        for input_index in len(self.inputs):
+        for input_index in range(len(self.inputs)):
             for input_key, input_value in self.inputs[input_index].items():
                 self.inputs[input_index][input_key] = torch.from_numpy(input_value)
 
-        for target_index in len(self.targets):
+        for target_index in range(len(self.targets)):
             for target_key, target_value in self.targets[target_index].items():
                 self.targets[target_index][target_key] = torch.from_numpy(target_value)
 
