@@ -294,16 +294,16 @@ class CoSEModel(nn.Module):
 
 
     def load_weights(self):
-        self.e_shared.load_state_dict(
+        self.encoder.load_state_dict(
             torch.load(self.config.model_path + 'encoder.pth',map_location=torch.device(self.device)))
 
-        self.d_shared.load_state_dict(
+        self.decoder.load_state_dict(
             torch.load(self.config.model_path + 'decoder.pth',map_location=torch.device(self.device)))
 
-        self.d2.load_state_dict(
+        self.embedding_predictive_model.load_state_dict(
             torch.load(self.config.model_path + 'emb_pred.pth',map_location=torch.device(self.device)))
 
-        self.denoiser.load_state_dict(
+        self.position_predictive_model.load_state_dict(
             torch.load(self.config.model_path + 'pos_pred.pth',map_location=torch.device(self.device)))
 
 
