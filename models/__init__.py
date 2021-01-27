@@ -265,7 +265,7 @@ class CoSEModel(nn.Module):
             loss_pos_pred = logli_gmm_logsumexp(target_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).sum()
             loss_emb_pred = logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi).sum()
             
-            loss_total = loss_pos_pred + loss_emb_pred + loss_ae
+            loss_total = - loss_pos_pred - loss_emb_pred - loss_ae
             #sys.exit(0)
             loss_total.backward()
 
