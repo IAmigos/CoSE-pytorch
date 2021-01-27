@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from data.loaders import *
 from models import *
 import json
-
+from utils import set_seed
 
 # batchdata = BatchCoSELoader(path = "/data/ajimenez/",
 #                           filenames={"inputs_file" : "inputs_list_based.pkl",
@@ -33,7 +33,7 @@ import json
 #                  "stop_predictive_grad": False}
 
 def train(config_file, use_wandb=True):
-
+    set_seed(0)
     cose = CoSEModel(config_file, use_wandb)
     cose.fit()
 

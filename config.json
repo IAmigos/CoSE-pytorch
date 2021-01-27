@@ -27,7 +27,7 @@
         "input_type": "hybrid",
         "replace_padding": true,
         "stop_predictive_grad": false,
-        "num_epochs":50,
+        "num_epochs":2,
         "lr_ae":5e-4,
         "lr_pos_pred":1e-3,
         "lr_emb_pred":1e-3
@@ -37,7 +37,7 @@
         "root_path":"./",
         "save_path":"weights_trained/",
         "dataset_path":"/data/ajimenez/cose/train/",
-        "num_backups":5,
+        "num_backups":2,
         "model_path":"weights/",
         "save_weights":true
     }

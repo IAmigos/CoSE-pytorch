@@ -5,6 +5,10 @@ import json
 from data.loaders import *
 from torch.utils.data import DataLoader
 import wandb
+import torch
+import numpy as np
+import random
+import os
 
 def parse_arguments():
     ap = argparse.ArgumentParser()
@@ -105,3 +109,16 @@ def get_batch_iterator(path):
                     batch_size = 1, #data is already in batch mode, batch_size = 1 means iterating every .get_next() returns a new batch
                     )
     return train_loader
+
+
+def set_seed(seed):
+    """Set seed"""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    os.environ["PYTHONHASHSEED"] = str(seed)
