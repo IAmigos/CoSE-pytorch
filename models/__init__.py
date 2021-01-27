@@ -277,6 +277,7 @@ class CoSEModel(nn.Module):
 
             optimizer_pos_pred.step()
             optimizer_emb_pred.step()
+            optimizer_ae.step()
 
         return (loss_ae, loss_pos_pred, loss_emb_pred, loss_total)
 
