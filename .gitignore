@@ -134,3 +134,4 @@ dmypy.json
 
 weights_trained/
 wandb/
+nohup.out

@@ -146,7 +146,7 @@ class CoSEModel(nn.Module):
 
         self.config = configure_model(config_file, self.use_wandb)
 
-        self.device = torch.device("cuda:0" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:1" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 

@@ -26,9 +26,9 @@
     "training_params":{
         "input_type": "hybrid",
         "replace_padding": true,
-        "stop_predictive_grad": true,
-        "num_epochs":5,
-        "lr_ae":1e-3,
+        "stop_predictive_grad": false,
+        "num_epochs":50,
+        "lr_ae":5e-4,
         "lr_pos_pred":1e-3,
         "lr_emb_pred":1e-3
     },
