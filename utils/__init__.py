@@ -102,5 +102,6 @@ def get_batch_iterator(path):
 
     train_loader = DataLoader(dataset =batchdata,
                     batch_size = 1, #data is already in batch mode, batch_size = 1 means iterating every .get_next() returns a new batch
+                    num_workers=10
                     )
     return train_loader

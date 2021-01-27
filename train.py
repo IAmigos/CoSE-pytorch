@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from data.loaders import *
 from models import *
 import json
-from models import *
+
 
 # batchdata = BatchCoSELoader(path = "/data/ajimenez/",
 #                           filenames={"inputs_file" : "inputs_list_based.pkl",
