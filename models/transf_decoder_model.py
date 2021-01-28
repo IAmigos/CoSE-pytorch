@@ -10,9 +10,9 @@ from utils import *
 import os
 
 
-class Decoder(nn.Module):
+class Trans_decoder(nn.Module):
     def __init__(self, size_embedding, num_components, out_units, layer_features: list):
-        super(Decoder, self).__init__()
+        super(Trans_decoder, self).__init__()
         self.dense_layers= nn.ModuleList(
                 [nn.Linear(
                     in_features=size_embedding + 1, #+1 por los t_inputs 

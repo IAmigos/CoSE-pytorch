@@ -51,12 +51,32 @@ def configure_model(config_file, use_wandb=False):
     config.model_path = config_file["general_config"]["model_path"]
     config.save_weights = config_file["general_config"]["save_weights"]
 
-    #encoder config
-    config.enc_d_model = config_file['enc_hparams']["enc_d_model"]
-    config.enc_nhead = config_file['enc_hparams']["enc_nhead"]
-    config.enc_dff = config_file['enc_hparams']["enc_dff"]
-    config.enc_n_layers = config_file['enc_hparams']["enc_n_layers"]
-    config.enc_dropout = config_file['enc_hparams']["enc_dropout"]
+    config.ae_model_type = config_file["ae_model_type"]
+
+    if config_file["ae_model_type"] == "transformer":
+        #encoder config
+        config.enc_d_model = config_file['enc_hparams']["transformer"]["enc_d_model"]
+        config.enc_nhead = config_file['enc_hparams']["transformer"]["enc_nhead"]
+        config.enc_dff = config_file['enc_hparams']["transformer"]["enc_dff"]
+        config.enc_n_layers = config_file['enc_hparams']["transformer"]["enc_n_layers"]
+        config.enc_dropout = config_file['enc_hparams']["transformer"]["enc_dropout"]
+        #decoder config
+        config.dec_gmm_num_components = config_file["dec_hparams"]["transformer"]["dec_gmm_num_components"]
+        config.dec_layer_features = config_file["dec_hparams"]["transformer"]["dec_layer_features"]
+    elif config_file["ae_model_type"] == "rnn":
+        #encoder config
+        config.enc_hsize = config_file["enc_hparams"]["rnn"]["enc_hsize"],
+        config.enc_n_layers = config_file["enc_hparams"]["rnn"]["enc_n_layers"],
+        config.enc_dropout = config_file["enc_hparams"]["rnn"]["enc_dropout"]
+        #decoder config
+        config.dec_hsize = config_file["dec_hparams"]["rnn"]["dec_hsize"]
+        config.dec_n_layers = config_file["dec_hparams"]["rnn"]["dec_n_layers"]
+        config.dec_dim_layer = config_file["dec_hparams"]["rnn"]["dec_dim_layer"]
+        config.dec_dropout = config_file["dec_hparams"]["rnn"]["dec_dropout"]
+        config.dec_gmm_num_components = config_file["dec_hparams"]["rnn"]["dec_gmm_num_components"]
+
+    else:
+        raise ValueError("specified ae_model_type does not exist, please change config in config.json 'ae_model_type'")
     #relational config
     config.rel_d_model = config_file["rel_hparams"]["rel_d_model"]
     config.rel_nhead = config_file["rel_hparams"]["rel_nhead"]
@@ -64,9 +84,7 @@ def configure_model(config_file, use_wandb=False):
     config.rel_n_layers = config_file["rel_hparams"]["rel_n_layers"]
     config.rel_dropout = config_file["rel_hparams"]["rel_dropout"]
     config.rel_gmm_num_components = config_file["rel_hparams"]["rel_gmm_num_components"]
-    #decoder config
-    config.dec_gmm_num_components = config_file["dec_hparams"]["dec_gmm_num_components"]
-    config.dec_layer_features = config_file["dec_hparams"]["dec_layer_features"]
+
     #cose model config
     config.size_embedding = config_file["cose_model_params"]["size_embedding"]
     config.num_predictive_inputs = config_file["cose_model_params"]["num_predictive_inputs"]

@@ -2,6 +2,7 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 import math
 import numpy as np
 from math import pi
@@ -29,9 +30,9 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class Encoder(nn.Module):
+class Trans_encoder(nn.Module):
     def __init__(self,d_model, nhead, dff, nlayers, size_embedding, dropout = 0):
-        super(Encoder, self).__init__()
+        super(Trans_encoder, self).__init__()
         from torch.nn import TransformerEncoder, TransformerEncoderLayer
         self.dense1 = nn.Linear(3, d_model)
         self.pos_encoder = PositionalEncoding(d_model, dropout)

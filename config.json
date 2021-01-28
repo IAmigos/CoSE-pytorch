@@ -1,10 +1,18 @@
 {
+    "ae_model_type":"transformer",
     "enc_hparams":{
-        "enc_d_model": 64,
-        "enc_nhead": 4,
-        "enc_dff":128,
-        "enc_n_layers":6,
-        "enc_dropout":0
+        "transformer":{
+            "enc_d_model": 64,
+            "enc_nhead": 4,
+            "enc_dff":128,
+            "enc_n_layers":6,
+            "enc_dropout":0
+        },
+        "rnn":{
+            "enc_hsize": 128,
+            "enc_n_layers": 4,
+            "enc_dropout": 0
+        }
     },
     "rel_hparams":{
         "rel_d_model":64,
@@ -15,8 +23,17 @@
         "rel_gmm_num_components":20
     },
     "dec_hparams":{
-        "dec_gmm_num_components":20,
-        "dec_layer_features":[512,512,512,512]
+        "transformer":{
+            "dec_gmm_num_components":20,
+            "dec_layer_features":[512,512,512,512]
+        },
+        "rnn":{
+            "dec_hsize": 128,
+            "dec_n_layers": 6,
+            "dec_dim_layer": 256,
+            "dec_dropout": 0,
+            "dec_gmm_num_components":20
+        }
     },
     "cose_model_params":{
         "size_embedding":8,

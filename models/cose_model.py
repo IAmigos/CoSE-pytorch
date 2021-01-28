@@ -6,8 +6,9 @@ import math
 import numpy as np
 from math import pi
 from .gmm import *
-from .encoder_model import *
-from .decoder_model import *
+from .transf_encoder_model import *
+from .transf_decoder_model import *
+from .seq2seq_encoder_model import *
 from .relational_model import *
 from utils import *
 import wandb
@@ -52,11 +53,22 @@ class CoSEModel(nn.Module):
 
     def init_model(self, device, config, use_wandb=True):
 
-        encoder = Encoder(d_model=self.config.enc_d_model, nhead=self.config.enc_nhead, dff=self.config.enc_dff,
-                          nlayers=self.config.enc_n_layers, size_embedding=self.config.size_embedding, dropout=self.config.enc_dropout)
-                    
-        decoder = Decoder(size_embedding=self.config.size_embedding, num_components=self.config.dec_gmm_num_components,
-                          out_units=2, layer_features=self.config.dec_layer_features)
+        if config.ae_model_type == "transformer":
+            encoder = Trans_encoder(d_model=self.config.enc_d_model, nhead=self.config.enc_nhead, dff=self.config.enc_dff,
+                            nlayers=self.config.enc_n_layers, size_embedding=self.config.size_embedding, dropout=self.config.enc_dropout)
+                        
+            decoder = Trans_decoder(size_embedding=self.config.size_embedding, num_components=self.config.dec_gmm_num_components,
+                            out_units=2, layer_features=self.config.dec_layer_features)
+        
+
+        elif config.ae_model_type == "rnn":
+            encoder = EncoderRNN(input_size=3, hidden_size=self.config.enc_hsize, 
+                                encoder_dim=self.config.size_embedding, num_layers=self.config.enc_n_layers, device=self.device, dropout= self.config.enc_dropout)
+
+            decoder = DecoderRNN(hidden_size=self.config.dec_hsize, t_input_size=4, output_size=16, 
+                            encoder_dim=self.config.size_embedding + 1, num_layers=self.config.dec_n_layers, device=self.device, 
+                            dim_layer=self.config.dec_dim_layer, num_components=self.config.dec_gmm_num_components, dropout = self.config.dec_dropout)
+        
         
         position_predictive_model = TransformerGMM(d_model=self.config.rel_d_model,nhead=self.config.rel_nhead,
                                                    dff=self.config.rel_dff, nlayers=self.config.rel_n_layers,

@@ -1,9 +1,9 @@
 from .gmm import *
-from .encoder_model import *
-from .decoder_model import *
+from .transf_encoder_model import *
+from .transf_decoder_model import *
+from .seq2seq_encoder_model import *
 from .relational_model import *
 from .cose_model import *
-
 
 
 
