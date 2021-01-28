@@ -1,5 +1,6 @@
 from .relational import *
 from .encoder import *
+from .visualization import *
 import argparse
 import json
 from data.loaders import *

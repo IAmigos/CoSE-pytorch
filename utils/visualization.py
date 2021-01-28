@@ -15,11 +15,26 @@ def get_min_max(values, offset_ratio=0.0):
     min_ -= offset_ * offset_ratio
     max_ += offset_ * offset_ratio
     return (min_, max_)
+ 
+def fig2data (fig):
+    """
+    @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
+    @param fig a matplotlib figure
+    @return a numpy 3D array of RGBA values
+    """
+    # draw the renderer
+    fig.canvas.draw ( )
+    # Get the RGBA buffer from the figure
+    w,h = fig.canvas.get_width_height()
+    buf = np.fromstring ( fig.canvas.tostring_argb(), dtype=np.uint8 )
+    buf.shape = ( w, h,4 )
+ 
+    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+    buf = np.roll ( buf, 3, axis = 2 )
+    return buf
 
-
-def transform_strokes_to_image(drawing, output_path, output_file, seq_len_drawing, start_coord_drawing, mean_channel,
-                               std_channel, num_strokes=None, square_figure=False, x_borders=None, y_borders=None,
-                               colors=None, marker_size=0, alpha=1.0, highlight_start=False):
+def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, mean_channel,
+                               std_channel, num_strokes=None, output_path = None, output_file = None,  save  = False, square_figure=False, x_borders=None, y_borders=None,colors=None, marker_size=0, alpha=1.0, highlight_start=False):
     """
     Args:
         drawing: a diagram sample with shape (max_num_stroke)
@@ -40,7 +55,7 @@ def transform_strokes_to_image(drawing, output_path, output_file, seq_len_drawin
     Returns: fig, ax
     """
     
-    save_path = os.path.join(output_path, output_file)
+    
     
     if drawing.shape[2] == 2:
         drawing = np.concatenate([drawing, np.zeros((drawing.size(0), drawing.size(1), 1))], axis = -1)
@@ -124,18 +139,18 @@ def transform_strokes_to_image(drawing, output_path, output_file, seq_len_drawin
                 ax.text(text_x, text_y, str(i + 1), fontsize=25,
                         ha='center', va='center', color=plt_stroke[0].get_color())
 
-    if fig is not None:
+    if save:
+        save_path = os.path.join(output_path, output_file)
         fig.savefig(save_path + ".png", format="png")
+#             with tf.io.gfile.GFile(save_path + ".png", "w") as tf_save_path:
+#                 fig.savefig(tf_save_path, format="png", bbox_inches='tight', dpi=200)
+#                 plt.close()
 
-        # with tf.io.gfile.GFile(save_path + ".png", "w") as tf_save_path:
-        #     fig.savefig(tf_save_path, format="png", bbox_inches='tight', dpi=200)
-        #     plt.close()
-
-        # with open(save_path + ".svg", "w") as tf_save_path:
-        #     fig.savefig(tf_save_path, format='svg', dpi=300)
-        #     plt.close()
-
-    return fig, ax
+#             with open(save_path + ".svg", "w") as tf_save_path:
+#                 fig.savefig(tf_save_path, format='svg', dpi=300)
+#                 plt.close()
+    np_fig = fig2data(fig)
+    return np_fig, fig, ax
 
 
 if __name__ == '__main__':

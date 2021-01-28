@@ -36,8 +36,9 @@ class CoSEModel(nn.Module):
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
-    def tranform2image(self, stroke):
-        pass
+    def tranform2image(self, stroke, seq_len, start_coord):
+        mean_channel, std_channel = 
+        npfig, _, _ = transform_strokes_to_image(drawing_out_cpu, seq_len_out, pos_model_output_cpu)
 
     def forward(self, diagrama):
         
@@ -230,7 +231,7 @@ class CoSEModel(nn.Module):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
             #generated_strokes = test_strokes(valid_loader)
-
+            
             if self.use_wandb:
                 wandb.log({"train_epoch":epoch+1,
                             #"Generated strokes": [wandb.Image(img) for img in generated_strokes],
