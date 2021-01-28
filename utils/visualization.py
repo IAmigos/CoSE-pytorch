@@ -36,12 +36,15 @@ def transform_strokes_to_image(drawing, output_path, output_file, seq_len_drawin
         colors: list of colors per stroke.
         marker_size: marker size for ploting points in the strokes
         alpha: opacity of drawing
-        highlight_start: if order of strokes and 
+        highlight_start: if order of strokes and highlight of first point of stroke will be ploted 
     Returns: fig, ax
     """
     
     save_path = os.path.join(output_path, output_file)
-
+    
+    if drawing.shape[2] == 2:
+        drawing = np.concatenate([drawing, torch.zeros(drawing.size(0), drawing.size(1), 1)], axis = -1)
+    
     # unnormalize
     mean = np.concatenate([std_channel, np.array([0])])
     std = np.concatenate([std_channel, np.array([0])])
