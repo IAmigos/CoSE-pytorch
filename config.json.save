@@ -1,18 +1,10 @@
 {
-    "ae_model_type":"transformer",
     "enc_hparams":{
-        "transformer":{
-            "enc_d_model": 64,
-            "enc_nhead": 4,
-            "enc_dff":128,
-            "enc_n_layers":6,
-            "enc_dropout":0
-        },
-        "rnn":{
-            "enc_hsize": 128,
-            "enc_n_layers": 4,
-            "enc_dropout": 0
-        }
+        "enc_d_model": 64,
+        "enc_nhead": 4,
+        "enc_dff":128,
+        "enc_n_layers":6,
+        "enc_dropout":0
     },
     "rel_hparams":{
         "rel_d_model":64,
@@ -23,17 +15,8 @@
         "rel_gmm_num_components":20
     },
     "dec_hparams":{
-        "transformer":{
-            "dec_gmm_num_components":20,
-            "dec_layer_features":[512,512,512,512]
-        },
-        "rnn":{
-            "dec_hsize": 128,
-            "dec_n_layers": 6,
-            "dec_dim_layer": 256,
-            "dec_dropout": 0,
-            "dec_gmm_num_components":20
-        }
+        "dec_gmm_num_components":20,
+        "dec_layer_features":[512,512,512,512]
     },
     "cose_model_params":{
         "size_embedding":8,
@@ -44,17 +27,16 @@
         "input_type": "hybrid",
         "replace_padding": true,
         "stop_predictive_grad": true,
-        "num_epochs":2,
+        "num_epochs":50,
         "lr_ae":1e-3,
         "lr_pos_pred":1e-3,
-        "lr_emb_pred":1e-3
-    },
+        "lr_emb_pred":1e-3    },
     "general_config":{
         "use_gpu": true,
         "root_path":"./",
         "save_path":"weights_trained/",
         "dataset_path":"/data/ajimenez/cose/train/",
-        "num_backups":2,
+        "num_backups":5,
         "model_path":"weights/",
         "save_weights":true
     }
