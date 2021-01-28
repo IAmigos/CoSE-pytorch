@@ -43,7 +43,7 @@ def transform_strokes_to_image(drawing, output_path, output_file, seq_len_drawin
     save_path = os.path.join(output_path, output_file)
     
     if drawing.shape[2] == 2:
-        drawing = np.concatenate([drawing, torch.zeros(drawing.size(0), drawing.size(1), 1)], axis = -1)
+        drawing = np.concatenate([drawing, np.zeros((drawing.size(0), drawing.size(1), 1))], axis = -1)
     
     # unnormalize
     mean = np.concatenate([std_channel, np.array([0])])
