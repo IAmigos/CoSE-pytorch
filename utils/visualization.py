@@ -2,6 +2,7 @@ import json
 import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+plt.switch_backend('agg')
 import numpy as np
 import pickle
 # import tensorflow as tf
@@ -16,12 +17,13 @@ def get_min_max(values, offset_ratio=0.0):
     return (min_, max_)
 
 
-def transform_strokes_to_image(drawing, output_file, seq_len_drawing, start_coord_drawing, mean_channel,
+def transform_strokes_to_image(drawing, output_path, output_file, seq_len_drawing, start_coord_drawing, mean_channel,
                                std_channel, num_strokes=None, square_figure=False, x_borders=None, y_borders=None,
                                colors=None, marker_size=0, alpha=1.0, highlight_start=False):
     """
     Args:
         drawing: a diagram sample with shape (max_num_stroke)
+        output_path: output path where file be saved
         output_file: name of output file without extension
         seq_len_drawing: amount of points for each stroke
         start_coord_drawing: start coord for each stroke
@@ -37,12 +39,8 @@ def transform_strokes_to_image(drawing, output_file, seq_len_drawing, start_coor
         highlight_start: if order of strokes and 
     Returns: fig, ax
     """
-
-    log_dir = '/home/dibanez/pruebas'  # TODO definir log_dir
-    save_path = os.path.join(log_dir, output_file)
-
-    print(drawing.shape)
-    print(seq_len_drawing.shape)
+    
+    save_path = os.path.join(output_path, output_file)
 
     # unnormalize
     mean = np.concatenate([std_channel, np.array([0])])
@@ -157,6 +155,8 @@ if __name__ == '__main__':
         open(os.path.join(path, filenames["targets_file"]), 'rb'))
     with open(os.path.join(stats_path, filenames["stats_file"])) as json_file:
         stats = json.load(json_file)
+        
+    log_dir = '/home/dibanez/pruebas'  # TODO definir log_dir
 
     input_sample = inputs[1]
 
@@ -174,6 +174,6 @@ if __name__ == '__main__':
     
     # fig, _ = transform_strokes_to_image(drawing_sample, 'noutput_pruebas', seq_len_drawing, start_coord_drawing,
     #                                     mean_channel, std_channel, num_strokes_drawing, square_figure=True)
-    fig, _ = transform_strokes_to_image(drawing_sample, 'noutput_pruebas', seq_len_drawing, start_coord_drawing,
+    fig, _ = transform_strokes_to_image(drawing_sample, log_dir, 'noutput_pruebas', seq_len_drawing, start_coord_drawing,
                                         mean_channel, std_channel, num_strokes_drawing, square_figure=True, alpha=0.5, highlight_start=True)
     fig.show()
