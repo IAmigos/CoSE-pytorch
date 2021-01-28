@@ -56,6 +56,7 @@
         "dataset_path":"/data/ajimenez/cose/train/",
         "num_backups":2,
         "model_path":"weights/",
-        "save_weights":true
+        "save_weights":true,
+        "stats_path": "/data/jcabrera/didi_wo_text/"
     }
 }

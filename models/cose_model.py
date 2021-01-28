@@ -36,19 +36,29 @@ class CoSEModel(nn.Module):
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
-    def tranform2image(self, stroke, seq_len, start_coord):
-        mean_channel, std_channel = 
-        npfig, _, _ = transform_strokes_to_image(drawing_out_cpu, seq_len_out, pos_model_output_cpu)
+    def tranform2image(self, strokes, seq_len, start_coords, pred_stroke, pred_start_coord):
+        mean_channel, std_channel = get_stats(self.config["general_config"]["stats_path"])
+        npfig, _, _ = transform_strokes_to_image(strokes, seq_len, start_coords, pred_stroke, pred_start_coord, mean_channel, std_channel)
+        return npfig
 
     def forward(self, diagrama):
-        
+        _, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device)
+        encoder_out = cose.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, look_ahead_mask)
+        diagram_embedding, padded_max_num_strokes, _, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes)
+        start_pos_base = start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
+        pos_model_inputs = torch.cat([diagram_embedding, start_pos_base], dim = 2)
+        pos_pred_mu, pos_pred_sigma, pos_pred_pi = cose.position_predictive_model(pos_model_inputs, num_strokes, None)
+        pos_model_output = cose.position_predictive_model.draw_sample(pos_pred_mu, pos_pred_sigma, pos_pred_pi)
+        pred_model_inputs = torch.cat([diagram_embedding, start_pos_base, pos_model_output.unsqueeze(dim = 1).repeat(1, diagram_embedding.size(1), 1)],
+                                      dim = 2)
+        emb_pred_mu, emb_pred_sigma, emb_pred_pi = cose.embedding_predictive_model(pred_model_inputs, num_strokes, None)
+        strokes_output = cose.embedding_predictive_model.draw_sample(emb_pred_mu, emb_pred_sigma, emb_pred_pi)
         out = self.encoder(diagrama, stroke_lengths, src_mask)
         out = self.position_predictive_model(out)
         out = self.embedding_predictive_model(out)
         out = self.decoder(out)
         stroke_image = self.tranform2image(out)
-
-        return stroke_image        
+        return out
 
 
 

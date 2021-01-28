@@ -129,6 +129,11 @@ def get_batch_iterator(path):
                     )
     return train_loader
 
+def get_stats(stats_path='/data/jcabrera/didi_wo_text/'):
+    stats_json = 'didi_wo_text-stats-origin_abs_pos.json'
+    with open(os.path.join(stats_path, stats_json)) as json_file:
+        stats = json.load(json_file)
+    return stats
 
 def set_seed(seed):
     """Set seed"""
