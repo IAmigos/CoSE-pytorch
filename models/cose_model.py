@@ -45,18 +45,28 @@ class CoSEModel(nn.Module):
         
         
         npfig, fig, ax, file_save_path = transform_strokes_to_image(drawing=strokes, seq_len_drawing=seq_len, start_coord_drawing=start_coords, mean_channel=mean_channel,
-                                                     std_channel=std_channel, num_strokes=num_strokes, output_path=self.config.diagrams_img_path, output_file=file_save_name, square_figure=True, save=True, highlight_start=True)
+                                                     std_channel=std_channel, num_strokes=num_strokes, output_path=self.config.diagrams_img_path, output_file=file_save_name, square_figure=True, save=True, alpha=0.6, highlight_start=True)
         return npfig, fig, ax, file_save_path
 
     def test_strokes(self, valid_loader):
+
+        self.encoder.eval()
+        self.decoder.eval()
+        self.embedding_predictive_model.eval()
+        self.position_predictive_model.eval()
+
+
         mean_channel, std_channel = get_stats(self.config.stats_path)
         
         num_batch = 0
 
-        list_names_files = []
-        recon_cd = None
-        pred_cd = None
-
+        list_name_files = []
+        list_recon_cd = []
+        list_pred_cd = []
+        list_loss_eval_ae = []
+        list_loss_eval_pos = []
+        list_loss_eval_emb = []
+        
         for batch_input, batch_target in iter(valid_loader):
 
             num_batch = num_batch + 1
@@ -64,26 +74,39 @@ class CoSEModel(nn.Module):
             num_strokes = batch_input['num_strokes'].squeeze(dim = 0)
             seq_len_drawing = batch_input['seq_len'].squeeze(dim = 0)
             start_coord = batch_input['start_coord'].squeeze(dim = 0).squeeze()
-
-            enc_inputs = encoder_inputs.reshape(-1, num_strokes.max(), encoder_inputs.size(1), encoder_inputs.size(2))
-            seq_len = seq_len_drawing.reshape(-1, num_strokes.max())
-            st_coord = start_coord.reshape(-1,num_strokes.max(), start_coord.size(1))
-
             #forward autoregressive
+            with torch.no_grad():
+                _, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device)
+                encoder_out = self.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, look_ahead_mask)
+                diagram_embedding, padded_max_num_strokes, _, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes)
+                start_pos_base = start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
+                #calculate recon_cd, pred_cd, diagram output
+                loss_eval_ae, recon_cd = get_reconstruction_metrics(encoder_inputs, encoder_out, strok_len_inputs, self.decoder)
+                loss_eval_emb, loss_eval_pos, pred_cd, recons_strokes, recons_start_pos = get_prediction_metrics(encoder_inputs, strok_len_inputs,
+                                                                                                       diagram_embedding,
+                                                                                                       start_pos_base, num_strokes,
+                                                                                                       [self.decoder, self.position_predictive_model, self.embedding_predictive_model],
+                                                                                                       use_autoregressive = False)
+            
+            list_recon_cd.append(recon_cd) 
+            list_pred_cd.append(pred_cd)
+            list_loss_eval_ae.append(loss_eval_ae.item())
+            list_loss_eval_pos.append(loss_eval_pos.item())
+            list_loss_eval_emb.append(loss_eval_emb.item())
 
-
-            #calculate recon_cd and pred_cd
-
-            #save diagramas in jpg for the first batch
             if num_batch==1:
                 num_diagrams = enc_inputs.shape[0]
                 #save image
                 for i_diagram in range(num_diagrams):
-                    npfig, fig, _, file_save_path = tranform2image(enc_inputs[i_diagram], seq_len[i_diagram], st_coord[i_diagram], mean_channel, std_channel, num_strokes[i_diagram], file_save_name="diagrama_n_{}".format(i_diagram))
-                    list_names_files.append(file_save_path)
+                    recons_strokes_padded_i = torch.nn.utils.rnn.pad_sequence(recons_strokes[i_diagram], batch_first=True, padding_value=0.0).cpu().detach()
+                    seq_len_i = torch.tensor([len(i) for i in recons_strokes[i_diagram]]).cpu().detach()
+                    recons_start_pos_i = recons_start_pos[i_diagram].squeeze().cpu().detach()
+                    num_strokes_i = torch.tensor(len(recons_strokes[i_diagram])).cpu().detach()
+                    
+                    npfig, fig, _, file_save_path = tranform2image(recons_strokes_padded_i, seq_len_i, recons_start_pos_i, mean_channel, std_channel, num_strokes_i, file_save_name="diagrama_n_{}".format(i_diagram))
+                    list_name_files.append(file_save_path)
 
-
-        return (recon_cd, pred_cd, list_names_files)
+        return (sum(list_recon_cd), sum(list_pred_cd), sum(list_loss_eval_ae),sum(list_loss_eval_pos), sum(list_loss_eval_emb), list_name_files)
 
 
 
@@ -287,17 +310,22 @@ class CoSEModel(nn.Module):
         for epoch in tqdm(range(self.config.num_epochs)):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
-            recon_cd, pred_cd, list_names_files = test_strokes(valid_loader)
+            recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = test_strokes(valid_loader)
             
             if self.use_wandb:
                 wandb.log({"train_epoch":epoch+1,
                             "Generated strokes": [wandb.Image(img) for img in list_names_files],
                             "recon_chamfer_distance": recon_cd,
                             "pred_chamfer_distance": pred_cd,
-                            "loss_ae":loss_ae.item(),
-                            "loss_pos_pred":loss_pos_pred.item(),
-                            "loss_emb_pred":loss_emb_pred.item(), 
-                            "loss_total":loss_total.item()})
+                            "loss_train_ae":loss_ae.item(),
+                            "loss_train_pos_pred":loss_pos_pred.item(),
+                            "loss_train_emb_pred":loss_emb_pred.item(), 
+                            "loss_train_total":loss_total.item(),
+                            "loss_eval_ae": loss_eval_ae,
+                            "loss_eval_pos_pred": loss_eval_pos,
+                            "loss_eval_emb_pred": loss_eval_emb,
+                            "loss_eval_total": loss_eval_ae+loss_eval_pos+loss_eval_emb
+                            })
 
             if self.config.save_weights and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
                 path_save_epoch = path_save_weights + 'epoch_{}'.format(epoch+1)
