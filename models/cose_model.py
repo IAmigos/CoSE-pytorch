@@ -106,7 +106,7 @@ class CoSEModel(nn.Module):
                     npfig, fig, _, file_save_path = tranform2image(recons_strokes_padded_i, seq_len_i, recons_start_pos_i, mean_channel, std_channel, num_strokes_i, file_save_name="diagrama_n_{}".format(i_diagram))
                     list_name_files.append(file_save_path)
 
-        return (sum(list_recon_cd), sum(list_pred_cd), sum(list_loss_eval_ae),sum(list_loss_eval_pos), sum(list_loss_eval_emb), list_name_files)
+        return (np.mean(list_recon_cd), np.mean(list_pred_cd), np.mean(list_loss_eval_ae),np.mean(list_loss_eval_pos), np.mean(list_loss_eval_emb), list_name_files)
 
 
 
