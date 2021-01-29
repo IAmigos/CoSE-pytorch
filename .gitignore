@@ -143,3 +143,6 @@ config.json.save
 *.png
 *.jpeg
 *.jpg
+
+#carpetas prueba
+pesos_descargados/
