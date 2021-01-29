@@ -330,24 +330,50 @@ class CoSEModel(nn.Module):
         valid_loader = get_batch_iterator(self.config.validation_dataset_path)
 
         for epoch in tqdm(range(self.config.num_epochs)):
-            #loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
+            loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
-            recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
+        
+
+            print("Losses")
+            print('Epoch [{}/{}], Loss train autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_ae.item()))
+            print('Epoch [{}/{}], Loss train position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
+            print('Epoch [{}/{}], Loss train embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_emb_pred.item()))
+            print('Epoch [{}/{}], Loss train total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_total.item()))
+ 
+
+
+            if self.use_wandb and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
+                recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
             
-            if self.use_wandb:
+                print('Epoch [{}/{}], Loss eval autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae))
+                print('Epoch [{}/{}], Loss eval position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_pos))
+                print('Epoch [{}/{}], Loss eval embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_emb))
+                print('Epoch [{}/{}], Loss eval total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae+loss_eval_pos+loss_eval_emb))
+ 
+
                 wandb.log({"train_epoch":epoch+1,
                             "Generated strokes": [wandb.Image(img) for img in list_names_files],
                             "recon_chamfer_distance": recon_cd,
                             "pred_chamfer_distance": pred_cd,
-                            #"loss_train_ae":loss_ae.item(),
-                            #"loss_train_pos_pred":loss_pos_pred.item(),
-                            #"loss_train_emb_pred":loss_emb_pred.item(), 
-                            #"loss_train_total":loss_total.item(),
+                            "loss_train_ae":loss_ae.item(),
+                            "loss_train_pos_pred":loss_pos_pred.item(),
+                            "loss_train_emb_pred":loss_emb_pred.item(), 
+                            "loss_train_total":loss_total.item(),
                             "loss_eval_ae": loss_eval_ae,
                             "loss_eval_pos_pred": loss_eval_pos,
                             "loss_eval_emb_pred": loss_eval_emb,
                             "loss_eval_total": loss_eval_ae+loss_eval_pos+loss_eval_emb
                             })
+
+            elif self.use_wandb:
+
+                wandb.log({"train_epoch":epoch+1,
+                            "loss_train_ae":loss_ae.item(),
+                            "loss_train_pos_pred":loss_pos_pred.item(),
+                            "loss_train_emb_pred":loss_emb_pred.item(), 
+                            "loss_train_total":loss_total.item(),
+                            })
+
 
             if self.config.save_weights and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
                 path_save_epoch = path_save_weights + 'epoch_{}'.format(epoch+1)
@@ -359,11 +385,6 @@ class CoSEModel(nn.Module):
 
                 self.save_weights(path_save_weights, path_save_epoch, self.use_wandb)
 
-            print("Losses")
-            #print('Epoch [{}/{}], Loss autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_ae.item()))
-            #print('Epoch [{}/{}], Loss position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
-            #print('Epoch [{}/{}], Loss embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_emb_pred.item()))
-            #print('Epoch [{}/{}], Loss total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_total.item()))
         
         if self.use_wandb:
             wandb.finish()
