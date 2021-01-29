@@ -102,8 +102,8 @@ class CoSEModel(nn.Module):
                                                                                                                  std_channel = std_channel,
                                                                                                                  use_autoregressive = False)
             
-            list_recon_cd.append(recon_cd) 
-            list_pred_cd.append(pred_cd)
+            list_recon_cd.append(recon_cd.item()) 
+            list_pred_cd.append(pred_cd.item())
             list_loss_eval_ae.append(loss_eval_ae.item())
             list_loss_eval_pos.append(loss_eval_pos.item())
             list_loss_eval_emb.append(loss_eval_emb.item())
@@ -325,7 +325,7 @@ class CoSEModel(nn.Module):
         #optimizer_ae, optimizer_pos_pred, optimizer_emb_pred 
         optimizers = self.init_optimizers()
     
-
+        
         train_loader = get_batch_iterator(self.config.train_dataset_path)
         valid_loader = get_batch_iterator(self.config.validation_dataset_path)
 
