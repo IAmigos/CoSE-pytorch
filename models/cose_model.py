@@ -70,10 +70,10 @@ class CoSEModel(nn.Module):
         for batch_input, batch_target in iter(valid_loader):
 
             num_batch = num_batch + 1
-            encoder_inputs = batch_input['encoder_inputs'].squeeze(dim = 0)
-            num_strokes = batch_input['num_strokes'].squeeze(dim = 0)
-            strok_len_inputs = batch_input['seq_len'].squeeze(dim = 0)
-            start_coord = batch_input['start_coord'].squeeze(dim = 0).squeeze()
+            encoder_inputs = batch_input['encoder_inputs'].squeeze(dim = 0).to(self.device)
+            num_strokes = batch_input['num_strokes'].squeeze(dim = 0).to(self.device)
+            strok_len_inputs = batch_input['seq_len'].squeeze(dim = 0).to(self.device)
+            start_coord = batch_input['start_coord'].squeeze(dim = 0).squeeze().to(self.device)
             #forward autoregressive
             with torch.no_grad():
                 _, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device)
