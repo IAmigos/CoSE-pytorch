@@ -38,6 +38,7 @@ def get_prediction_metrics(encoder_inputs, strok_len_inputs, diagram_embedding, 
     pred_cd = []
     reconstructed_diagrams_strokes = []
     reconstructed_diagrams_start_pos = []
+    num_diagrams = diagram_embedding.size(0)
     for index_diagram in range(diagram_embedding.size(0)):
         #diagram inputs
         one_diagram = diagram_embedding[index_diagram].unsqueeze(dim =0)
