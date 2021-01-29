@@ -305,7 +305,7 @@ class CoSEModel(nn.Module):
     
 
         train_loader = get_batch_iterator(self.config.train_dataset_path)
-        valid_loader = get_batch_iterator(self.validation_dataset_path)
+        valid_loader = get_batch_iterator(self.config.validation_dataset_path)
 
         for epoch in tqdm(range(self.config.num_epochs)):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
