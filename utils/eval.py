@@ -3,7 +3,7 @@ import torch
 from models import logli_gmm_logsumexp
 import numpy as np
 
-def get_reconstruction_metrics(expected_strokes, pred_embedding, strok_len_inputs, decoder, skip_rows = 0):
+def get_reconstruction_metrics(expected_strokes, pred_embedding, strok_len_inputs, decoder, device, skip_rows = 0):
     loss_ae = 0
     chamf_dist = 0
     q = 0

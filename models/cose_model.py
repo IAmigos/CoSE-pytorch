@@ -81,7 +81,7 @@ class CoSEModel(nn.Module):
                 diagram_embedding, padded_max_num_strokes, _, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes)
                 start_pos_base = start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
                 #calculate recon_cd, pred_cd, diagram output
-                loss_eval_ae, recon_cd = get_reconstruction_metrics(encoder_inputs, encoder_out, strok_len_inputs, self.decoder)
+                loss_eval_ae, recon_cd = get_reconstruction_metrics(encoder_inputs, encoder_out, strok_len_inputs, self.decoder, self.device)
                 loss_eval_emb, loss_eval_pos, pred_cd, recons_strokes, recons_start_pos = get_prediction_metrics(encoder_inputs, strok_len_inputs,
                                                                                                        diagram_embedding,
                                                                                                        start_pos_base, num_strokes,
