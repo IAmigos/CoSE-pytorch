@@ -333,7 +333,7 @@ class CoSEModel(nn.Module):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
         
-
+    
             print("Losses")
             print('Epoch [{}/{}], Loss train autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_ae.item()))
             print('Epoch [{}/{}], Loss train position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
@@ -352,7 +352,7 @@ class CoSEModel(nn.Module):
  
 
                 wandb.log({"train_epoch":epoch+1,
-                            "Generated strokes": [wandb.Image(img) for img in list_names_files],
+                            "Generated strokes": [wandb.Image(img) for img in list_name_files],
                             "recon_chamfer_distance": recon_cd,
                             "pred_chamfer_distance": pred_cd,
                             "loss_train_ae":loss_ae.item(),
