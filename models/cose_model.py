@@ -310,24 +310,42 @@ class CoSEModel(nn.Module):
         for epoch in tqdm(range(self.config.num_epochs)):
             #loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
-            recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
+            #recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
             
             if self.use_wandb:
                 wandb.log({"train_epoch":epoch+1,
-                            "Generated strokes": [wandb.Image(img) for img in list_names_files],
-                            "recon_chamfer_distance": recon_cd,
-                            "pred_chamfer_distance": pred_cd,
-                            #"loss_train_ae":loss_ae.item(),
-                            #"loss_train_pos_pred":loss_pos_pred.item(),
-                            #"loss_train_emb_pred":loss_emb_pred.item(), 
-                            #"loss_train_total":loss_total.item(),
-                            "loss_eval_ae": loss_eval_ae,
-                            "loss_eval_pos_pred": loss_eval_pos,
-                            "loss_eval_emb_pred": loss_eval_emb,
-                            "loss_eval_total": loss_eval_ae+loss_eval_pos+loss_eval_emb
+                            #"Generated strokes": [wandb.Image(img) for img in list_names_files],
+                            #"recon_chamfer_distance": recon_cd,
+                            #"pred_chamfer_distance": pred_cd,
+                            "loss_train_ae":loss_ae.item(),
+                            "loss_train_pos_pred":loss_pos_pred.item(),
+                            "loss_train_emb_pred":loss_emb_pred.item(), 
+                            "loss_train_total":loss_total.item(),
+                            #"loss_eval_ae": loss_eval_ae,
+                            #"loss_eval_pos_pred": loss_eval_pos,
+                            #"loss_eval_emb_pred": loss_eval_emb,
+                            #"loss_eval_total": loss_eval_ae+loss_eval_pos+loss_eval_emb
                             })
 
             if self.config.save_weights and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
+                recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
+            
+                if self.use_wandb:
+                    wandb.log({#"train_epoch":epoch+1,
+                                "Generated strokes": [wandb.Image(img) for img in list_names_files],
+                                "recon_chamfer_distance": recon_cd,
+                                "pred_chamfer_distance": pred_cd,
+                                #"loss_train_ae":loss_ae.item(),
+                                #"loss_train_pos_pred":loss_pos_pred.item(),
+                                #"loss_train_emb_pred":loss_emb_pred.item(), 
+                                #"loss_train_total":loss_total.item(),
+                                "loss_eval_ae": loss_eval_ae,
+                                "loss_eval_pos_pred": loss_eval_pos,
+                                "loss_eval_emb_pred": loss_eval_emb,
+                                "loss_eval_total": loss_eval_ae+loss_eval_pos+loss_eval_emb
+                                })
+
+
                 path_save_epoch = path_save_weights + 'epoch_{}'.format(epoch+1)
                 
                 try:
