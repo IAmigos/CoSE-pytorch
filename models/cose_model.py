@@ -72,7 +72,7 @@ class CoSEModel(nn.Module):
             num_batch = num_batch + 1
             encoder_inputs = batch_input['encoder_inputs'].squeeze(dim = 0)
             num_strokes = batch_input['num_strokes'].squeeze(dim = 0)
-            seq_len_drawing = batch_input['seq_len'].squeeze(dim = 0)
+            strok_len_inputs = batch_input['seq_len'].squeeze(dim = 0)
             start_coord = batch_input['start_coord'].squeeze(dim = 0).squeeze()
             #forward autoregressive
             with torch.no_grad():
