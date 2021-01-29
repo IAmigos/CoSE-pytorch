@@ -81,12 +81,26 @@ class CoSEModel(nn.Module):
                 diagram_embedding, padded_max_num_strokes, _, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes)
                 start_pos_base = start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
                 #calculate recon_cd, pred_cd, diagram output
-                loss_eval_ae, recon_cd, _ = get_reconstruction_metrics(encoder_inputs, encoder_out, strok_len_inputs, self.decoder, self.device)
-                loss_eval_emb, loss_eval_pos, pred_cd, recons_strokes, recons_start_pos = get_prediction_metrics(encoder_inputs, strok_len_inputs,
-                                                                                                       diagram_embedding,
-                                                                                                       start_pos_base, num_strokes,
-                                                                                                       [self.decoder, self.position_predictive_model, self.embedding_predictive_model],
-                                                                                                       use_autoregressive = False)
+                loss_eval_ae, recon_cd, _ = get_reconstruction_metrics(expected_strokes=encoder_inputs,
+                                                                       expected_start_coord=start_coord,
+                                                                       pred_embedding =encoder_out,
+                                                                       recon_start_coord=start_coord,
+                                                                       strok_len_inputs=strok_len_inputs,
+                                                                       decoder=self.decoder,
+                                                                       mean_channel = mean_channel,
+                                                                       std_channel=std_channel,
+                                                                       device = self.device)
+                
+                loss_eval_emb, loss_eval_pos, pred_cd, recons_strokes, recons_start_pos = get_prediction_metrics(encoder_inputs =encoder_inputs,
+                                                                                                                 strok_len_inputs = strok_len_inputs,
+                                                                                                                 diagram_embedding = diagram_embedding,
+                                                                                                                 start_pos_base = start_pos_base,
+                                                                                                                  num_strokes = num_strokes,
+                                                                                                                 models = [self.decoder, self.position_predictive_model, self.embedding_predictive_model],
+                                                                                                                 device = self.device,
+                                                                                                                 mean_channel = mean_channel,
+                                                                                                                 std_channel = std_channel,
+                                                                                                                 use_autoregressive = False)
             
             list_recon_cd.append(recon_cd) 
             list_pred_cd.append(pred_cd)
@@ -95,15 +109,23 @@ class CoSEModel(nn.Module):
             list_loss_eval_emb.append(loss_eval_emb.item())
 
             if num_batch==1:
-                num_diagrams = enc_inputs.shape[0]
+                num_diagrams = len(recons_strokes)
                 #save image
+                print(recons_strokes[0][0].shape)
+                print(recons_strokes[0][1].shape)
+                print(recons_strokes[0][2].shape)
+                print(len(recons_strokes))
                 for i_diagram in range(num_diagrams):
-                    recons_strokes_padded_i = torch.nn.utils.rnn.pad_sequence(recons_strokes[i_diagram], batch_first=True, padding_value=0.0).cpu().detach()
+                    try:
+                        recons_strokes_padded_i = torch.nn.utils.rnn.pad_sequence(recons_strokes[i_diagram], batch_first=True, padding_value=0.0).cpu().detach()
+                    except:
+                        print(i_diagram)
+                        print(recons_strokes[i_diagram])
                     seq_len_i = torch.tensor([len(i) for i in recons_strokes[i_diagram]]).cpu().detach()
                     recons_start_pos_i = recons_start_pos[i_diagram].squeeze().cpu().detach()
                     num_strokes_i = torch.tensor(len(recons_strokes[i_diagram])).cpu().detach()
                     
-                    npfig, fig, _, file_save_path = tranform2image(recons_strokes_padded_i, seq_len_i, recons_start_pos_i, mean_channel, std_channel, num_strokes_i, file_save_name="diagrama_n_{}".format(i_diagram))
+                    npfig, fig, _, file_save_path = self.tranform2image(recons_strokes_padded_i, seq_len_i, recons_start_pos_i, mean_channel, std_channel, num_strokes_i, file_save_name="diagrama_n_{}".format(i_diagram))
                     list_name_files.append(file_save_path)
 
         return (np.mean(list_recon_cd), np.mean(list_pred_cd), np.mean(list_loss_eval_ae),np.mean(list_loss_eval_pos), np.mean(list_loss_eval_emb), list_name_files)
@@ -310,28 +332,10 @@ class CoSEModel(nn.Module):
         for epoch in tqdm(range(self.config.num_epochs)):
             #loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
-            #recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
+            recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
             
-            print("Losses")
-            #print('Epoch [{}/{}], Loss train autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_ae.item()))
-            #print('Epoch [{}/{}], Loss train position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
-            #print('Epoch [{}/{}], Loss train embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_emb_pred.item()))
-            #print('Epoch [{}/{}], Loss train total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_total.item()))
-            
-
-
-            if self.use_wandb and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
-                recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
-
-                print('Epoch [{}/{}], Loss eval autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae))
-                print('Epoch [{}/{}], Loss eval position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_pos))
-                print('Epoch [{}/{}], Loss eval embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_emb))
-                print('Epoch [{}/{}], Loss eval total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae+loss_eval_pos+loss_eval_emb))
-        
-
-
-
-                wandb.log({#"train_epoch":epoch+1,
+            if self.use_wandb:
+                wandb.log({"train_epoch":epoch+1,
                             "Generated strokes": [wandb.Image(img) for img in list_names_files],
                             "recon_chamfer_distance": recon_cd,
                             "pred_chamfer_distance": pred_cd,
@@ -345,23 +349,6 @@ class CoSEModel(nn.Module):
                             "loss_eval_total": loss_eval_ae+loss_eval_pos+loss_eval_emb
                             })
 
-            #elif self.use_wandb:
-                #wandb.log({"train_epoch":epoch+1,
-                            #"Generated strokes": [wandb.Image(img) for img in list_names_files],
-                            #"recon_chamfer_distance": recon_cd,
-                            #"pred_chamfer_distance": pred_cd,
-                 #           "loss_train_ae":loss_ae.item(),
-                 #           "loss_train_pos_pred":loss_pos_pred.item(),
-                 #           "loss_train_emb_pred":loss_emb_pred.item(), 
-                 #           "loss_train_total":loss_total.item(),
-                            #"loss_eval_ae": loss_eval_ae,
-                            #"loss_eval_pos_pred": loss_eval_pos,
-                            #"loss_eval_emb_pred": loss_eval_emb,
-                            #"loss_eval_total": loss_eval_ae+loss_eval_pos+loss_eval_emb
-                  #          })
-
-
-
             if self.config.save_weights and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
                 path_save_epoch = path_save_weights + 'epoch_{}'.format(epoch+1)
                 
@@ -372,7 +359,11 @@ class CoSEModel(nn.Module):
 
                 self.save_weights(path_save_weights, path_save_epoch, self.use_wandb)
 
+            print("Losses")
+            #print('Epoch [{}/{}], Loss autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_ae.item()))
+            #print('Epoch [{}/{}], Loss position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
+            #print('Epoch [{}/{}], Loss embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_emb_pred.item()))
+            #print('Epoch [{}/{}], Loss total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_total.item()))
         
-
         if self.use_wandb:
             wandb.finish()
