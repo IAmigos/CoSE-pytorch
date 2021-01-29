@@ -11,11 +11,12 @@ from utils import set_seed
 def train(config_file, use_wandb=True):
     set_seed(0)
     cose = CoSEModel(config_file, use_wandb)
-    path_to_model = f"/home/{user}/CoSE-pytorch/pesos_descargados"
-    cose.encoder.load_state_dict(torch.load(os.path.join(os.getcwd(), path_to_model,"encoder.pth"), map_location=device))
-    cose.decoder.load_state_dict(torch.load(os.path.join(os.getcwd(),path_to_model ,"decoder.pth"), map_location=device))
-    cose.position_predictive_model.load_state_dict(torch.load(os.path.join(os.getcwd(),path_to_model,"pos_pred.pth"), map_location=device))
-    cose.embedding_predictive_model.load_state_dict(torch.load(os.path.join(os.getcwd(),path_to_model,"emb_pred.pth"), map_location=device))
+    path_to_model = f"/home/ajimenez/CoSE-pytorch/pesos_descargados"
+    
+    cose.encoder.load_state_dict(torch.load(os.path.join(os.getcwd(), path_to_model,"encoder.pth"), map_location=cose.device))
+    cose.decoder.load_state_dict(torch.load(os.path.join(os.getcwd(),path_to_model ,"decoder.pth"), map_location=cose.device))
+    cose.position_predictive_model.load_state_dict(torch.load(os.path.join(os.getcwd(),path_to_model,"pos_pred.pth"), map_location=cose.device))
+    cose.embedding_predictive_model.load_state_dict(torch.load(os.path.join(os.getcwd(),path_to_model,"emb_pred.pth"), map_location=cose.device))
     cose.fit()
 
 if __name__=='__main__':
