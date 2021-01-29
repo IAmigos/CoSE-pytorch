@@ -7,7 +7,7 @@ from math import pi
 from .gmm import *
 from utils import *
 import os
-
+from torch.autograd import Variable
 
 
 

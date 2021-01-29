@@ -1,5 +1,5 @@
 {
-    "ae_model_type":"transformer",
+    "ae_model_type":"rnn",
     "enc_hparams":{
         "transformer":{
             "enc_d_model": 64,
@@ -43,7 +43,7 @@
     "training_params":{
         "input_type": "hybrid",
         "replace_padding": true,
-        "stop_predictive_grad": true,
+        "stop_predictive_grad": false,
         "num_epochs":50,
         "lr_ae":1e-3,
         "lr_pos_pred":1e-3,

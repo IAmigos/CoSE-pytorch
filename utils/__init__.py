@@ -70,8 +70,8 @@ def configure_model(config_file, use_wandb=False):
         config.dec_layer_features = config_file["dec_hparams"]["transformer"]["dec_layer_features"]
     elif config_file["ae_model_type"] == "rnn":
         #encoder config
-        config.enc_hsize = config_file["enc_hparams"]["rnn"]["enc_hsize"],
-        config.enc_n_layers = config_file["enc_hparams"]["rnn"]["enc_n_layers"],
+        config.enc_hsize = config_file["enc_hparams"]["rnn"]["enc_hsize"]
+        config.enc_n_layers = config_file["enc_hparams"]["rnn"]["enc_n_layers"]
         config.enc_dropout = config_file["enc_hparams"]["rnn"]["enc_dropout"]
         #decoder config
         config.dec_hsize = config_file["dec_hparams"]["rnn"]["dec_hsize"]
