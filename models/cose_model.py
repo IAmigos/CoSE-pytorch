@@ -263,10 +263,8 @@ class CoSEModel(nn.Module):
             torch.load(self.config.model_path + 'pos_pred.pth',map_location=torch.device(self.device)))
 
 
-    def fit(self, n_epochs:int = 1):
+    def fit(self):
                         
-
-
         if self.config.use_gpu and torch.cuda.is_available():
             print("Training in " + torch.cuda.get_device_name(0))  
         else:
