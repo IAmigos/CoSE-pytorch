@@ -44,8 +44,8 @@ class CoSEModel(nn.Module):
             pass
         
         
-        npfig, fig, ax, file_save_path = transform_strokes_to_image(strokes, seq_len, start_coords, mean_channel,
-                                                     std_channel, num_strokes, self.config.diagrams_img_path, file_save_name, square_figure=True, save=True, highlight_start=True)
+        npfig, fig, ax, file_save_path = transform_strokes_to_image(drawing=strokes, seq_len_drawing=seq_len, start_coord_drawing=start_coords, mean_channel=mean_channel,
+                                                     std_channel=std_channel, num_strokes=num_strokes, output_path=self.config.diagrams_img_path, output_file=file_save_name, square_figure=True, save=True, highlight_start=True)
         return npfig, fig, ax, file_save_path
 
     def test_strokes(self, valid_loader):
