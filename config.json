@@ -53,10 +53,12 @@
         "use_gpu": true,
         "root_path":"./",
         "save_path":"weights_trained/",
-        "dataset_path":"/data/ajimenez/cose/train/",
+        "diagrams_img_path":"diagramas_img/",
+        "train_dataset_path":"/data/ajimenez/cose/train/",
+        "validation_dataset_path":"/data/ajimenez/cose/valid/",
         "num_backups":2,
         "model_path":"weights/",
         "save_weights":true,
-        "stats_path": "/data/jcabrera/didi_wo_text/"
+        "stats_path": "/data/jcabrera/didi_wo_text/didi_wo_text-stats-origin_abs_pos.json"
     }
 }

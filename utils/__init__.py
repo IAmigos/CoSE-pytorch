@@ -47,10 +47,13 @@ def configure_model(config_file, use_wandb=False):
     config.use_gpu = config_file["general_config"]["use_gpu"]   
     config.root_path = config_file["general_config"]["root_path"]
     config.save_path = config_file["general_config"]["save_path"]
-    config.dataset_path = config_file["general_config"]["dataset_path"]
+    config.train_dataset_path = config_file["general_config"]["train_dataset_path"]
+    config.validation_dataset_path = config_file["general_config"]["validation_dataset_path"]
     config.num_backups = config_file["general_config"]["num_backups"]
     config.model_path = config_file["general_config"]["model_path"]
     config.save_weights = config_file["general_config"]["save_weights"]
+    config.stats_path = config_file["general_config"]["stats_path"]
+    config.diagrams_img_path = config_file["general_config"]["diagrams_img_path"]
 
     config.ae_model_type = config_file["ae_model_type"]
 
@@ -119,21 +122,26 @@ def parse_targets(batch_target, device):
     return t_target_ink
 
 def get_batch_iterator(path):
+
     batchdata = BatchCoSELoader(path = path,
                         filenames={"inputs_file" : "inputs_list_based_x16.pkl",
                                     "targets_file": "target_list_based_x16.pkl"}
                     )
 
-    train_loader = DataLoader(dataset =batchdata,
+    loader = DataLoader(dataset =batchdata,
                     batch_size = 1, #data is already in batch mode, batch_size = 1 means iterating every .get_next() returns a new batch
                     )
-    return train_loader
+    return loader
 
-def get_stats(stats_path='/data/jcabrera/didi_wo_text/'):
-    stats_json = 'didi_wo_text-stats-origin_abs_pos.json'
-    with open(os.path.join(stats_path, stats_json)) as json_file:
+def get_stats(stats_path='/data/jcabrera/didi_wo_text/didi_wo_text-stats-origin_abs_pos.json'):
+    
+    with open(stats_path) as json_file:
         stats = json.load(json_file)
-    return stats
+
+    mean_channel = stats['mean_channel'][:2]
+    std_channel = np.sqrt(stats['var_channel'][:2])
+
+    return mean_channel, std_channel
 
 def set_seed(seed):
     """Set seed"""

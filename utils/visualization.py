@@ -140,8 +140,8 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
                         ha='center', va='center', color=plt_stroke[0].get_color())
 
     if save:
-        save_path = os.path.join(output_path, output_file)
-        fig.savefig(save_path + ".png", format="png")
+        save_path = os.path.join(output_path, output_file) + ".jpg"
+        fig.savefig(save_path , format="JPEG")
 #             with tf.io.gfile.GFile(save_path + ".png", "w") as tf_save_path:
 #                 fig.savefig(tf_save_path, format="png", bbox_inches='tight', dpi=200)
 #                 plt.close()
@@ -150,7 +150,7 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
 #                 fig.savefig(tf_save_path, format='svg', dpi=300)
 #                 plt.close()
     np_fig = fig2data(fig)
-    return np_fig, fig, ax
+    return np_fig, fig, ax, save_path
 
 
 if __name__ == '__main__':

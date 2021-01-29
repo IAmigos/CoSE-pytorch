@@ -36,10 +36,56 @@ class CoSEModel(nn.Module):
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
-    def tranform2image(self, strokes, seq_len, start_coords, pred_stroke, pred_start_coord):
-        mean_channel, std_channel = get_stats(self.config["general_config"]["stats_path"])
-        npfig, _, _ = transform_strokes_to_image(strokes, seq_len, start_coords, pred_stroke, pred_start_coord, mean_channel, std_channel)
-        return npfig
+    def tranform2image(self, strokes, seq_len, start_coords, mean_channel, std_channel, num_strokes, file_save_name):
+        
+        try:
+            os.mkdir(self.config.root_path + self.config.diagrams_img_path)
+        except OSError:
+            pass
+        
+        
+        npfig, fig, ax, file_save_path = transform_strokes_to_image(strokes, seq_len, start_coords, mean_channel,
+                                                     std_channel, num_strokes, self.config.diagrams_img_path, file_save_name, square_figure=True, save=True, highlight_start=True)
+        return npfig, fig, ax, file_save_path
+
+    def test_strokes(self, valid_loader):
+        mean_channel, std_channel = get_stats(self.config.stats_path)
+        
+        num_batch = 0
+
+        list_names_files = []
+        recon_cd = None
+        pred_cd = None
+
+        for batch_input, batch_target in iter(valid_loader):
+
+            num_batch = num_batch + 1
+            encoder_inputs = batch_input['encoder_inputs'].squeeze(dim = 0)
+            num_strokes = batch_input['num_strokes'].squeeze(dim = 0)
+            seq_len_drawing = batch_input['seq_len'].squeeze(dim = 0)
+            start_coord = batch_input['start_coord'].squeeze(dim = 0).squeeze()
+
+            enc_inputs = encoder_inputs.reshape(-1, num_strokes.max(), encoder_inputs.size(1), encoder_inputs.size(2))
+            seq_len = seq_len_drawing.reshape(-1, num_strokes.max())
+            st_coord = start_coord.reshape(-1,num_strokes.max(), start_coord.size(1))
+
+            #forward autoregressive
+
+
+            #calculate recon_cd and pred_cd
+
+            #save diagramas in jpg for the first batch
+            if num_batch==1:
+                num_diagrams = enc_inputs.shape[0]
+                #save image
+                for i_diagram in range(num_diagrams):
+                    npfig, fig, _, file_save_path = tranform2image(enc_inputs[i_diagram], seq_len[i_diagram], st_coord[i_diagram], mean_channel, std_channel, num_strokes[i_diagram], file_save_name="diagrama_n_{}".format(i_diagram))
+                    list_names_files.append(file_save_path)
+
+
+            return (recon_cd, pred_cd, list_names_files)
+
+
 
     def forward(self, diagrama):
         #diagram (1, ...)
@@ -123,6 +169,7 @@ class CoSEModel(nn.Module):
 
         
         return (optimizer_ae, optimizer_pos_pred, optimizer_emb_pred)
+
 
     def train_step(self, train_loader, optimizers):
 
@@ -236,16 +283,19 @@ class CoSEModel(nn.Module):
         optimizers = self.init_optimizers()
     
 
-        train_loader = get_batch_iterator(self.config.dataset_path)
+        train_loader = get_batch_iterator(self.config.train_dataset_path)
+        valid_loader = get_batch_iterator(self.validation_dataset_path)
 
         for epoch in tqdm(range(self.config.num_epochs)):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
-            #generated_strokes = test_strokes(valid_loader)
+            recon_cd, pred_cd, list_names_files = test_strokes(valid_loader)
             
             if self.use_wandb:
                 wandb.log({"train_epoch":epoch+1,
-                            #"Generated strokes": [wandb.Image(img) for img in generated_strokes],
+                            "Generated strokes": [wandb.Image(img) for img in list_names_files],
+                            "recon_chamfer_distance": recon_cd,
+                            "pred_chamfer_distance": pred_cd,
                             "loss_ae":loss_ae.item(),
                             "loss_pos_pred":loss_pos_pred.item(),
                             "loss_emb_pred":loss_emb_pred.item(), 

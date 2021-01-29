@@ -134,5 +134,6 @@ dmypy.json
 
 weights_trained/
 wandb/
+diagramas_img/
 nohup.out
 config.json.save
