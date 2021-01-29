@@ -34,7 +34,7 @@ def fig2data (fig):
     return buf
 
 def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, mean_channel,
-                               std_channel, num_strokes=None, output_path = None, output_file = None,  save  = False, square_figure=False, x_borders=None, y_borders=None,colors=None, marker_size=0, alpha=1.0, highlight_start=False):
+                               std_channel, num_strokes=None, stroke_pred=None, start_coord_pred=None, output_path = None, output_file = None,  save  = False, square_figure=False, x_borders=None, y_borders=None,colors=None, marker_size=0, alpha=1.0, highlight_start=False):
     """
     Args:
         drawing: a diagram sample with shape (max_num_stroke)
@@ -55,15 +55,22 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
     Returns: fig, ax
     """
     
-    
+    if stroke_pred is not None:
+        assert start_coord_pred is not None, 'Error: Please define start_coord_pred as start coordinates for stroke_pred'
     
     if drawing.shape[2] == 2:
         drawing = np.concatenate([drawing, np.zeros((drawing.size(0), drawing.size(1), 1))], axis = -1)
     
+    if stroke_pred is not None and stroke_pred.shape[-1] == 2:
+        stroke_pred = np.concatenate([stroke_pred, np.zeros((stroke_pred.shape[0], 1))], axis = -1)
+
     # unnormalize
     mean = np.concatenate([std_channel, np.array([0])])
     std = np.concatenate([std_channel, np.array([0])])
     drawing = drawing * std + mean
+
+    if stroke_pred is not None:
+        stroke_pred =  stroke_pred * std + mean
 
     stroke_list = []
     for i in range(drawing.shape[0]):
@@ -71,6 +78,10 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
             [start_coord_drawing[i].squeeze(), np.array([0])])
         i_stroke = drawing[i][:seq_len_drawing[i]] + start_coords
         stroke_list.append(i_stroke)
+
+    if stroke_pred is not None:
+        start_coord_pred = np.concatenate([start_coord_pred.squeeze(),np.array([0])])
+        stroke_pred = stroke_pred + start_coord_pred
 
     if num_strokes:
         stroke_list = stroke_list[:num_strokes]
@@ -82,6 +93,9 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
         all_strokes = stroke_list[0]
     if all_strokes.shape[0] == 0:
         return None
+
+    if stroke_pred is not None:
+        all_strokes = np.concatenate([all_strokes, stroke_pred], axis=0)
 
     if x_borders is None:
         x_borders = get_min_max(all_strokes[:, 0], 0.1)
@@ -138,6 +152,13 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
                     text_y -= (text_x - stroke[0, 0]) / 2.0
                 ax.text(text_x, text_y, str(i + 1), fontsize=25,
                         ha='center', va='center', color=plt_stroke[0].get_color())
+
+    if stroke_pred is not None:
+        color = mpl.cm.tab20.colors[i%20]
+        if marker_size > 0:
+            ax.plot(stroke_pred[:, 0], stroke_pred[:, 1], lw=3, color=color, marker='o', markersize=marker_size)
+        else:
+            plt_stroke=ax.plot(stroke_pred[:, 0], stroke_pred[:, 1], lw=3, color=color, alpha=1)
 
     if save:
         save_path = os.path.join(output_path, output_file) + ".jpg"
