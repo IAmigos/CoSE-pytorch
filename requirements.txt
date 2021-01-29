@@ -4,3 +4,4 @@ numpy==1.19.4
 wandb==0.10.12
 tqdm==4.55.1
 helper==2.4.2
+chamferdist

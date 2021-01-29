@@ -42,6 +42,7 @@ class CoSEModel(nn.Module):
         return npfig
 
     def forward(self, diagrama):
+        #diagram (1, ...)
         _, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device)
         encoder_out = cose.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, look_ahead_mask)
         diagram_embedding, padded_max_num_strokes, _, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes)
