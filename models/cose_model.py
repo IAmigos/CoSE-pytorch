@@ -83,7 +83,7 @@ class CoSEModel(nn.Module):
                     list_names_files.append(file_save_path)
 
 
-            return (recon_cd, pred_cd, list_names_files)
+        return (recon_cd, pred_cd, list_names_files)
 
 
 
