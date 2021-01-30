@@ -32,7 +32,7 @@ class CoSEModel(nn.Module):
 
         self.config = configure_model(config_file, self.use_wandb)
 
-        self.device = torch.device("cuda:2" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:0" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
@@ -333,7 +333,7 @@ class CoSEModel(nn.Module):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
         
-    
+
             print("Losses")
             print('Epoch [{}/{}], Loss train autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_ae.item()))
             print('Epoch [{}/{}], Loss train position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
