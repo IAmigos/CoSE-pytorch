@@ -2,17 +2,21 @@ import torch
 
 def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_strokes_x_diagram_tensor,
                          input_type ="hybrid", num_predictive_inputs = 32, replace_padding = True, end_positions = False, device = None):
-    
-    #obtains diagram embedding (batch_strokes, embedding_size) -> (num_diagrams, padded_n_strokes, embedding_size)
+    #================================#
     diagram_embedding, padded_max_num_strokes, min_n_stroke, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes_x_diagram_tensor)
-    #creates indexes to gather from
-    all_n_inputs = []
-    all_input_indexes = []
-    all_target_indexes = []
-    all_seq_len = []
-
+    start_pos_base = inputs_start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
+    #num_predictive_inputs = 32
     if input_type == "hybrid":
         num_predictive_inputs //= 2
+    #creates indexes to gather from
+    # -----------------------#
+    all_input_emb = []
+    all_input_start_pos = []
+    all_seq_len_emb = []
+    #-----------------------#
+    all_target_emb = []
+    all_target_start_pos = []
+    all_n_inputs = []
 
     if input_type in ["random", "hybrid"]:
         for i in range(num_predictive_inputs):
@@ -20,42 +24,76 @@ def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_st
                                                                                   padded_max_num_strokes,
                                                                                   num_diagrams,
                                                                                   min_n_stroke, device)
-            all_input_indexes.append(input_indexes)        
-            all_target_indexes.append(target_indexes)
+            #-------------------------------------#
+            input_embedding = torch.stack([diagram_embedding[diagram_index][input_indexes[diagram_index]] for diagram_index in range(num_diagrams)])
+            input_start_pos = torch.stack([start_pos_base[diagram_index][input_indexes[diagram_index]] for diagram_index in range(num_diagrams)])
+            target_embedding = torch.stack([diagram_embedding[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze()
+            target_start_pos = torch.stack([start_pos_base[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze()
+            seq_len_embedding = torch.ones([num_diagrams])*n_inputs
+            #---------------------------------------#
+            all_input_emb.append(input_embedding)
+            all_input_start_pos.append(input_start_pos)
+            all_target_emb.append(target_embedding)
+            all_target_start_pos.append(target_start_pos)
+            all_seq_len_emb.append(seq_len_embedding)
             all_n_inputs.append(n_inputs)
-            all_seq_len.append(torch.ones([num_diagrams])*n_inputs)
-
     if input_type in ["order", "hybrid"]:
         for i in range(num_predictive_inputs):
             input_indexes, target_indexes, n_inputs = get_ordered_inp_target_pairs(num_strokes_x_diagram_tensor,
                                                                                    padded_max_num_strokes,
                                                                                    num_diagrams,
                                                                                    min_n_stroke, device)
-            all_input_indexes.append(input_indexes)
-            all_target_indexes.append(target_indexes)
+            #----------------------------------------------------#
+            input_embedding = torch.stack([diagram_embedding[diagram_index][input_indexes[diagram_index]] for diagram_index in range(num_diagrams)])
+            input_start_pos = torch.stack([start_pos_base[diagram_index][input_indexes[diagram_index]] for diagram_index in range(num_diagrams)])
+            try:
+                target_embedding = torch.stack([diagram_embedding[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze()
+            except:
+                print("#################################")
+                print("target_indexes", target_indexes)
+                print(diagram_embedding.shape)
+                target_indexes = target_indexes.squeeze(dim=1)
+                print(target_indexes.shape)
+                print(num_diagrams)
+                print(target_indexes[0])
+                print(target_indexes[1])
+                print(target_indexes[2])
+                print(target_indexes[3])
+                #sys.exit(0)
+                print(target_embedding = torch.stack([diagram_embedding[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze())
+#                 print(target_indexes[diagram_index])
+#                 print(diagram_index)
+                
+            target_start_pos = torch.stack([start_pos_base[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze()
+            seq_len_embedding = torch.ones([num_diagrams])*n_inputs
+            #-----------------------------------------------------#
+            all_input_emb.append(input_embedding)
+            all_input_start_pos.append(input_start_pos)
+            all_target_emb.append(target_embedding)
+            all_target_start_pos.append(target_start_pos)
+            all_seq_len_emb.append(seq_len_embedding)
             all_n_inputs.append(n_inputs)
-            all_seq_len.append(torch.ones([num_diagrams])*n_inputs)
+            #------------------------------------------------------#
+    sampled_seq_len_emb = torch.stack(all_seq_len_emb)
+    sampled_target_start_pos = torch.stack(all_target_start_pos)
+    sampled_target_emb = torch.stack(all_target_emb)
+    sampled_input_start_pos = torch.zeros(32, num_diagrams, max(all_n_inputs),2)
+    #-------------------------------------------------------------#
+    for i_sample, sampled_data in enumerate(all_input_start_pos):
+        for i_diagram, content in enumerate(sampled_data):
+            sampled_input_start_pos[i_sample,i_diagram,:int(all_seq_len_emb[i_sample][i_diagram]),:] = content
 
-    #preparing for tensor indexing
-    input_range_n_inputs = torch.arange(start=0, end = num_diagrams).repeat(1,len(all_n_inputs)).permute(1,0).squeeze().to(device)
-    gather_target_index = torch.stack([input_range_n_inputs,
-                 torch.cat(all_target_indexes, dim = 0).squeeze()], dim = -1)
-    start_pos_base = inputs_start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
-    end_pos_base = inputs_end_coord.reshape(num_diagrams,padded_max_num_strokes,2)
-    #gathering indexes from base tensors
-    #print(gather_target_index)
-    #print("diagram_embedding.shape", diagram_embedding.shape)
-    pred_targets = torch.stack([diagram_embedding[i][j] for i,j in gather_target_index])
-    pred_inputs = gather_indexes(diagram_embedding, all_input_indexes, replace_padding = True)
-    pred_input_seq_len = torch.cat(all_seq_len,dim=0)
-    if end_positions:
-        start_pos = gather_indexes(start_pos_base, all_input_indexes, replace_padding = True)
-        end_pos = gather_indexes(end_pos_base, all_input_indexes, replace_padding = True)
-        context_pos = torch.cat([start_pos, end_pos], dim=-1)
-    else:
-        context_pos = gather_indexes(start_pos_base, all_input_indexes, replace_padding = True)
-    target_pos = torch.stack([start_pos_base[i][j] for i,j in gather_target_index])
-    return pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos
+    sampled_input_emb = torch.zeros(32, num_diagrams, max(all_n_inputs),8)
+    for i_sample, sampled_data in enumerate(all_input_emb):
+        for i_diagram, content in enumerate(sampled_data):
+            sampled_input_emb[i_sample,i_diagram,:int(all_seq_len_emb[i_sample][i_diagram]),:] = content
+    #-------------------------------------------------------------#
+    sampled_input_start_pos = sampled_input_start_pos.reshape(-1, sampled_input_start_pos.size(-2), sampled_input_start_pos.size(-1))
+    sampled_input_emb = sampled_input_emb.reshape(-1, sampled_input_emb.size(-2), sampled_input_emb.size(-1))
+    sampled_seq_len_emb = sampled_seq_len_emb.reshape(-1)
+    sampled_target_start_pos = sampled_target_start_pos.reshape(-1, sampled_target_start_pos.size(-1))
+    sampled_target_emb = sampled_target_emb.reshape(-1, sampled_target_emb.size(-1))
+    return sampled_input_start_pos, sampled_input_emb, sampled_seq_len_emb, sampled_target_start_pos, sampled_target_emb
 
 def gather_indexes(base_tensor, index_tensor, replace_padding = True):
     '''
@@ -90,23 +128,20 @@ def reshape_stroke2diagram(stroke_embedding,num_strokes_x_diagram_tensor):
 def get_random_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_strokes, num_diagrams, min_n_stroke, device):
     #TODO Revisar
     """Get a randomly generated input set and a target."""
-    n_inputs = torch.randint(2, (min_n_stroke+1),size = (1,)).to(device).item()
-    target_indexes = (torch.rand([num_diagrams]).to(device)*(num_strokes_x_diagram_tensor - 1)).int().reshape(-1,1) #index
-    input_range = torch.arange(start=1, end = padded_max_num_strokes + 1).repeat(num_diagrams,1).to(device)
-    mask = ((input_range -1)<= num_strokes_x_diagram_tensor.reshape(-1,1)) & ((input_range -1) != target_indexes)
-    input_indexes = torch.multinomial((input_range*mask).float().to(device),n_inputs) - 1
+    n_inputs = torch.randint(2, min_n_stroke,size = (1,)).to(device).item() #validated with tf
+    target_indexes = (torch.rand([num_diagrams]).to(device)*(num_strokes_x_diagram_tensor - 1)).int() #validated with tf
+    input_range = torch.arange(start=0, end = padded_max_num_strokes).repeat(num_diagrams,1).to(device) #validated with tf
+    mask = ((input_range)< num_strokes_x_diagram_tensor.reshape(-1,1)) & ((input_range -1) != target_indexes.reshape(-1,1)) #validated with tf
+    input_indexes = torch.multinomial((input_range*mask).float().to(device),n_inputs) #validated with tf
     return input_indexes, target_indexes, n_inputs
 
 def get_ordered_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_strokes, num_diagrams, min_n_stroke, device, random_target = False):
     #TODO Revisar
     """Get a slice (i.e., window) randomly."""
-    n_inputs = torch.randint(2, (min_n_stroke),size = (1,)).to(device).item()
+    n_inputs = torch.randint(2, min_n_stroke,size = (1,)).to(device).item()
     start_index = torch.randint(0, min_n_stroke - n_inputs, size = (1,)).to(device).item()
-    if not random_target:
-        target_indexes = torch.tensor([start_index+n_inputs]).repeat(num_diagrams,1).to(device)
-    else:
-        target_indexes = (torch.rand([num_diagrams])*(num_strokes_x_diagram_tensor - 1)).int().reshape(-1,1).to(device) # index
-    input_range = torch.arange(start=1, end = padded_max_num_strokes + 1).repeat(num_diagrams,1).to(device)
-    mask = ((input_range - 1)< target_indexes) & ((input_range - 1)>= start_index)
+    target_indexes = torch.tensor([start_index+n_inputs]).repeat(num_diagrams,1).to(device)
+    input_range = torch.arange(start=0, end = padded_max_num_strokes).repeat(num_diagrams,1).to(device)    
+    mask = ((input_range)< target_indexes) & ((input_range)>= start_index)
     input_indexes = input_range.masked_select(mask).reshape(num_diagrams, n_inputs)
     return input_indexes, target_indexes, n_inputs

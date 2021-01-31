@@ -1,4 +1,6 @@
-{
+
+
+cd{
     "ae_model_type":"transformer",
     "enc_hparams":{
         "transformer":{
@@ -42,7 +44,7 @@
     },
     "training_params":{
         "input_type": "hybrid",
-        "replace_padding": false,
+        "replace_padding": true,
         "stop_predictive_grad": true,
         "num_epochs":50,
         "lr_ae":1e-3,
@@ -56,7 +58,7 @@
         "diagrams_img_path":"diagramas_img/",
         "train_dataset_path":"/data/ajimenez/cose/train/",
         "validation_dataset_path":"/data/ajimenez/cose/valid/",
-        "num_backups":25,
+        "num_backups":10,
         "model_path":"weights/",
         "save_weights":true,
         "stats_path": "/data/jcabrera/didi_wo_text/didi_wo_text-stats-origin_abs_pos.json"

@@ -111,16 +111,8 @@ class CoSEModel(nn.Module):
             if num_batch==1:
                 num_diagrams = len(recons_strokes)
                 #save image
-                print(recons_strokes[0][0].shape)
-                print(recons_strokes[0][1].shape)
-                print(recons_strokes[0][2].shape)
-                print(len(recons_strokes))
                 for i_diagram in range(num_diagrams):
-                    try:
-                        recons_strokes_padded_i = torch.nn.utils.rnn.pad_sequence(recons_strokes[i_diagram], batch_first=True, padding_value=0.0).cpu().detach()
-                    except:
-                        print(i_diagram)
-                        print(recons_strokes[i_diagram])
+                    recons_strokes_padded_i = torch.nn.utils.rnn.pad_sequence(recons_strokes[i_diagram], batch_first=True, padding_value=0.0).cpu().detach()
                     seq_len_i = torch.tensor([len(i) for i in recons_strokes[i_diagram]]).cpu().detach()
                     recons_start_pos_i = recons_start_pos[i_diagram].squeeze().cpu().detach()
                     num_strokes_i = torch.tensor(len(recons_strokes[i_diagram])).cpu().detach()
@@ -225,6 +217,8 @@ class CoSEModel(nn.Module):
         self.embedding_predictive_model.train()
         self.position_predictive_model.train()
 
+        i=0
+        
         for batch_input, batch_target in iter(train_loader):
 
             self.encoder.zero_grad()
@@ -246,31 +240,39 @@ class CoSEModel(nn.Module):
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
             
             # Random/Ordered Sampling
-            pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos = random_index_sampling(encoder_out,inputs_start_coord,
-                                                                                            inputs_end_coord,num_strokes_x_diagram_tensor,
-                                                                                            input_type =self.config.input_type,
-                                                                                            num_predictive_inputs = self.config.num_predictive_inputs,
-                                                                                            replace_padding = self.config.replace_padding,
-                                                                                            end_positions = self.config.end_positions
-                                                                                            , device = self.device)
+            sampled_input_start_pos, sampled_input_emb,sampled_seq_len_emb,sampled_target_start_pos,sampled_target_emb = random_index_sampling(encoder_out = encoder_out, inputs_start_coord = inputs_start_coord,
+                                                                                                                                            inputs_end_coord = inputs_end_coord, num_strokes_x_diagram_tensor = num_strokes_x_diagram_tensor,
+                                                                                                                                            input_type ="hybrid", num_predictive_inputs = 32,
+                                                                                                                                            replace_padding = True, end_positions = False, device = self.device)
+
+            #
+            # pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos = random_index_sampling(encoder_out,inputs_start_coord,
+            #                                                                                 inputs_end_coord,num_strokes_x_diagram_tensor,
+            #                                                                                 input_type =self.config.input_type,
+            #                                                                                 num_predictive_inputs = self.config.num_predictive_inputs,
+            #                                                                                 replace_padding = self.config.replace_padding,
+            #                                                                                 end_positions = self.config.end_positions,
+            #                                                                                 device = self.device)
             # Detaching gradients of pred_targets (Teacher forcing)
             if self.config.stop_predictive_grad:
-                pred_inputs = pred_inputs.detach()
-                pred_input_seq_len = pred_input_seq_len.detach()
-                context_pos = context_pos.detach()
-                pred_targets = pred_targets.detach()
-                target_pos = target_pos.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
+                sampled_input_start_pos = sampled_input_start_pos.detach().to(self.device)
+                sampled_input_emb = sampled_input_emb.detach().to(self.device)
+                sampled_seq_len_emb = sampled_seq_len_emb.detach()
+                sampled_target_start_pos = sampled_target_start_pos.detach()
+                sampled_target_emb = sampled_target_emb.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
             # Concatenating inputs for relational model
-            pos_model_inputs = torch.cat([pred_inputs, context_pos], dim = 2)
-            pred_model_inputs = torch.cat([pred_inputs, context_pos, target_pos.unsqueeze(dim = 1).repeat(1, pred_inputs.shape[1], 1)], dim = 2)
+            #print("batch_pass")
+            i+=1
+            pos_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos], dim = 2)
+            pred_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos, sampled_target_start_pos.unsqueeze(dim = 1).repeat(1, sampled_input_start_pos.shape[1], 1)], dim = 2)
             # Predictive model Teacher forcing
-            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, pred_input_seq_len.int(), None)
+            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, sampled_seq_len_emb.int(), None)
             # Position model 
-            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, pred_input_seq_len.int(), None)
-            
-            loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi).sum())
-            loss_pos_pred = -1*(logli_gmm_logsumexp(target_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).sum())
-            loss_emb_pred = -1*(logli_gmm_logsumexp(pred_targets, emb_pred_mu, emb_pred_sigma, emb_pred_pi).sum())
+            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, sampled_seq_len_emb.int(), None)
+            # calculating loss
+            loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi).mean())
+            loss_pos_pred = -1*(logli_gmm_logsumexp(sampled_target_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).mean())
+            loss_emb_pred = -1*(logli_gmm_logsumexp(sampled_target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi).mean())
             
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
             #sys.exit(0)
