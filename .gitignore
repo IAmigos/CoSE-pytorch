@@ -146,3 +146,6 @@ config.json.save
 
 #carpetas prueba
 pesos_descargados/
+
+#all save files
+*.save
