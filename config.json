@@ -20,7 +20,7 @@
         "rel_dff":256,
         "rel_n_layers":6,
         "rel_dropout":0,
-        "rel_gmm_num_components":20
+        "rel_gmm_num_components":10
     },
     "dec_hparams":{
         "transformer":{

@@ -57,7 +57,7 @@ class OutputModelGMMDense(nn.Module):
         pi = out_pi
         mu = out_mu.reshape(comp_shape)
         sigma = out_sigma.reshape(comp_shape)
-        #permute variables (?, seq_len, out_units, num_components)
+        #permute variables -> (?, seq_len,num_components,out_units)
         mu = mu.permute(0, 1, 3, 2) 
         sigma = sigma.permute(0, 1, 3, 2)
         probs = pi.reshape(-1, self.num_components)
@@ -71,8 +71,8 @@ class OutputModelGMMDense(nn.Module):
             logits = torch.log1p(probs_adjusted)
             comp_indexes = torch.multinominal(logits, 1).reshape(-1, seq_len) #multinomial distribution is categorical
         #selects components of mu and sigma according to indexes selected
-        component_mu = mu.index_select(dim = 2, index = comp_indexes[-1]).squeeze(dim = 2)
-        component_sigma = sigma.index_select(dim = 2, index = comp_indexes[-1]).squeeze(dim = 2)
+        component_mu = torch.stack([mu[i,:,j.item(),:] for i, j in enumerate(comp_indexes.reshape(-1))], dim = 0).squeeze(dim = 1)
+        component_sigma = torch.stack([sigma[i,:,j.item(),:] for i, j in enumerate(comp_indexes.reshape(-1))], dim = 0).squeeze(dim = 1)
         #when greedy_mu component mu is the one calculated
         if greedy_mu:
             sample = component_mu

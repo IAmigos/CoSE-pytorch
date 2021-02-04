@@ -46,24 +46,7 @@ def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_st
             #----------------------------------------------------#
             input_embedding = torch.stack([diagram_embedding[diagram_index][input_indexes[diagram_index]] for diagram_index in range(num_diagrams)])
             input_start_pos = torch.stack([start_pos_base[diagram_index][input_indexes[diagram_index]] for diagram_index in range(num_diagrams)])
-            try:
-                target_embedding = torch.stack([diagram_embedding[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze()
-            except:
-                print("#################################")
-                print("target_indexes", target_indexes)
-                print(diagram_embedding.shape)
-                target_indexes = target_indexes.squeeze(dim=1)
-                print(target_indexes.shape)
-                print(num_diagrams)
-                print(target_indexes[0])
-                print(target_indexes[1])
-                print(target_indexes[2])
-                print(target_indexes[3])
-                #sys.exit(0)
-                print(target_embedding = torch.stack([diagram_embedding[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze())
-#                 print(target_indexes[diagram_index])
-#                 print(diagram_index)
-                
+            target_embedding = torch.stack([diagram_embedding[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze()
             target_start_pos = torch.stack([start_pos_base[diagram_index][target_indexes[diagram_index]] for diagram_index in range(num_diagrams)]).squeeze()
             seq_len_embedding = torch.ones([num_diagrams])*n_inputs
             #-----------------------------------------------------#
@@ -77,8 +60,8 @@ def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_st
     sampled_seq_len_emb = torch.stack(all_seq_len_emb)
     sampled_target_start_pos = torch.stack(all_target_start_pos)
     sampled_target_emb = torch.stack(all_target_emb)
-    sampled_input_start_pos = torch.zeros(32, num_diagrams, max(all_n_inputs),2)
     #-------------------------------------------------------------#
+    sampled_input_start_pos = torch.zeros(32, num_diagrams, max(all_n_inputs),2)
     for i_sample, sampled_data in enumerate(all_input_start_pos):
         for i_diagram, content in enumerate(sampled_data):
             sampled_input_start_pos[i_sample,i_diagram,:int(all_seq_len_emb[i_sample][i_diagram]),:] = content
@@ -93,6 +76,7 @@ def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_st
     sampled_seq_len_emb = sampled_seq_len_emb.reshape(-1)
     sampled_target_start_pos = sampled_target_start_pos.reshape(-1, sampled_target_start_pos.size(-1))
     sampled_target_emb = sampled_target_emb.reshape(-1, sampled_target_emb.size(-1))
+    
     return sampled_input_start_pos, sampled_input_emb, sampled_seq_len_emb, sampled_target_start_pos, sampled_target_emb
 
 def gather_indexes(base_tensor, index_tensor, replace_padding = True):

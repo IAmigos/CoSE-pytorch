@@ -11,14 +11,18 @@ import os
 
 
 class TransformerGMM(nn.Module):
-    def __init__(self,d_model, nhead, dff, nlayers, input_size, num_components, out_units, dropout = 0):
+    def __init__(self,d_model, nhead, dff, nlayers, input_size, num_components, out_units, dropout = 0, mid_concat = False):
         super(TransformerGMM, self).__init__()
         from torch.nn import TransformerDecoderLayer, TransformerDecoder
         self.dense1 = nn.Linear(input_size, d_model)
         decoder_layers = TransformerDecoderLayer(d_model, nhead, dff, dropout)
         self.transformer_decoder = TransformerDecoder(decoder_layers, nlayers)
-        self.dense2 = nn.Linear(d_model, dff*2) #[256 256]
+        if mid_concat:
+            self.dense2 = nn.Linear(d_model + 2, dff*2) #[64 256]
+        else:
+            self.dense2 = nn.Linear(d_model, dff*2)
         self.dense3 = nn.Linear(dff*2, dff) #[256 - 512 - 256]
+        self.relu = nn.ReLU()
         self.gmm = OutputModelGMMDense(input_size=dff, out_units=out_units, num_components=num_components)
         
     def get_last_stroke(self, tensor, num_strokes):
@@ -33,16 +37,16 @@ class TransformerGMM(nn.Module):
         
         return embeddingd_lt
 
-    def forward(self, src, num_strokes, src_mask):
-        output = self.dense1(src)
-        output = self.transformer_decoder(output, output)
+    def forward(self, src, num_strokes, tgt_cond = None, src_mask =  None):
+        output = self.dense1(src.permute(1,0,2))
+        output = self.transformer_decoder(output, output).permute(1,0,2)
+        output = self.get_last_stroke(output, num_strokes)
+        if tgt_cond is not None:
+            output = torch.cat([output, tgt_cond], dim = 1)
         output = self.dense2(output) 
         output = self.dense3(output)
-        output = self.get_last_stroke(output, num_strokes)
-        
+        output = self.relu(output)
         out_mu, out_sigma, out_pi = self.gmm(output)
-
-        #output = self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=True)
         
         return out_mu, out_sigma, out_pi
 

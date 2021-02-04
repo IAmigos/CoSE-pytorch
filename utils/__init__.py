@@ -125,8 +125,8 @@ def parse_targets(batch_target, device):
 def get_batch_iterator(path):
 
     batchdata = BatchCoSELoader(path = path,
-                        filenames={"inputs_file" : "inputs_list_based_x16.pkl",
-                                    "targets_file": "target_list_based_x16.pkl"}
+                        filenames={"inputs_file" : "inputs_list_based_x64.pkl",
+                                    "targets_file": "target_list_based_x64.pkl"}
                     )
 
     loader = DataLoader(dataset =batchdata,

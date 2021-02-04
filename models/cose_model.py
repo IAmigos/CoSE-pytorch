@@ -174,9 +174,10 @@ class CoSEModel(nn.Module):
 
         embedding_predictive_model = TransformerGMM(d_model = self.config.rel_d_model, nhead = self.config.rel_nhead,
                                                     dff = self.config.rel_dff, nlayers = self.config.rel_n_layers,
-                                                    input_size= self.config.size_embedding + 4,
+                                                    input_size= self.config.size_embedding + 2, #+4,
                                                     num_components = self.config.rel_gmm_num_components,
-                                                    out_units = self.config.size_embedding, dropout = self.config.rel_dropout
+                                                    out_units = self.config.size_embedding, dropout = self.config.rel_dropout,
+                                                    mid_concat = True
                                                   )
 
         encoder.to(device)
@@ -221,11 +222,13 @@ class CoSEModel(nn.Module):
         
         for batch_input, batch_target in iter(train_loader):
 
-            self.encoder.zero_grad()
-            self.decoder.zero_grad()
-            self.embedding_predictive_model.zero_grad()
-            self.position_predictive_model.zero_grad()
-            
+            #self.encoder.zero_grad()
+            #self.decoder.zero_grad()
+            #self.embedding_predictive_model.zero_grad()
+            #self.position_predictive_model.zero_grad()
+            optimizer_pos_pred.zero_grad()
+            optimizer_emb_pred.zero_grad()
+            optimizer_ae.zero_grad()            
             # Parsing inputs
             enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input,self.device)
             t_target_ink = parse_targets(batch_target,self.device)
@@ -264,10 +267,12 @@ class CoSEModel(nn.Module):
             #print("batch_pass")
             i+=1
             pos_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos], dim = 2)
-            pred_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos, sampled_target_start_pos.unsqueeze(dim = 1).repeat(1, sampled_input_start_pos.shape[1], 1)], dim = 2)
+            ## pred_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos, sampled_target_start_pos.unsqueeze(dim = 1).repeat(1, sampled_input_start_pos.shape[1], 1)], dim = 2)
+            tgt_cond = sampled_target_start_pos.squeeze(dim = 1)
             # Predictive model Teacher forcing
-            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, sampled_seq_len_emb.int(), None)
-            # Position model 
+            ## emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, sampled_seq_len_emb.int(), None)
+            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pos_model_inputs, sampled_seq_len_emb.int(), tgt_cond)
+            # Position model
             pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, sampled_seq_len_emb.int(), None)
             # calculating loss
             loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi).mean())
