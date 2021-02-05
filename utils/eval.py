@@ -75,8 +75,9 @@ def get_prediction_metrics(encoder_inputs, strok_len_inputs, diagram_embedding, 
             pos_pred_mu, pos_pred_sigma, pos_pred_pi = position_predictive_model(inp_pos_model, inp_num_strokes, None)
             pos_pred = position_predictive_model.draw_sample(pos_pred_mu, pos_pred_sigma, pos_pred_pi)  
             #next embedding prediction
-            pred_model_inputs = torch.cat([inp_diagram, inp_start_pos, pos_pred.unsqueeze(dim = 1).repeat(1, inp_num_strokes, 1)], dim = 2)
-            emb_pred_mu, emb_pred_sigma, emb_pred_pi = embedding_predictive_model(pred_model_inputs, inp_num_strokes, None)
+            #pred_model_inputs = torch.cat([inp_diagram, inp_start_pos, pos_pred.unsqueeze(dim = 1).repeat(1, inp_num_strokes, 1)], dim = 2)
+            tgt_cond = pos_pred.squeeze(dim = 1)
+            emb_pred_mu, emb_pred_sigma, emb_pred_pi = embedding_predictive_model(inp_pos_model, inp_num_strokes, tgt_cond)
             emb_pred = embedding_predictive_model.draw_sample(emb_pred_mu, emb_pred_sigma, emb_pred_pi)
             #losses
             #loss_pos_pred += -1*(logli_gmm_logsumexp(inp_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).mean())
