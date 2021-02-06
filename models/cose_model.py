@@ -246,7 +246,7 @@ class CoSEModel(nn.Module):
             # Random/Ordered Sampling
             sampled_input_start_pos, sampled_input_emb,sampled_seq_len_emb,sampled_target_start_pos,sampled_target_emb = random_index_sampling(encoder_out = encoder_out, inputs_start_coord = inputs_start_coord,
                                                                                                                                             inputs_end_coord = inputs_end_coord, num_strokes_x_diagram_tensor = num_strokes_x_diagram_tensor,
-                                                                                                                                            input_type ="hybrid", num_predictive_inputs = 32,
+                                                                                                                                            input_type =self.config.input_type, num_predictive_inputs = 32,
                                                                                                                                             replace_padding = True, end_positions = False, device = self.device)
 
             #
