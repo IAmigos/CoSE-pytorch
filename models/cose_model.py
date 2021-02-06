@@ -15,7 +15,7 @@ import wandb
 from tqdm import tqdm
 import os
 torch.cuda.empty_cache()
-
+from random import randint
 
 class CoSEModel(nn.Module):
     def __init__(self,
@@ -32,7 +32,7 @@ class CoSEModel(nn.Module):
 
         self.config = configure_model(config_file, self.use_wandb)
 
-        self.device = torch.device("cuda:0" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:3" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
@@ -242,6 +242,7 @@ class CoSEModel(nn.Module):
             decoder_inp = torch.cat([encoder_out_reshaped, t_inputs_reshaped], dim = 1)
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
             
+            set_seed(randint(0,100))
             # Random/Ordered Sampling
             sampled_input_start_pos, sampled_input_emb,sampled_seq_len_emb,sampled_target_start_pos,sampled_target_emb = random_index_sampling(encoder_out = encoder_out, inputs_start_coord = inputs_start_coord,
                                                                                                                                             inputs_end_coord = inputs_end_coord, num_strokes_x_diagram_tensor = num_strokes_x_diagram_tensor,

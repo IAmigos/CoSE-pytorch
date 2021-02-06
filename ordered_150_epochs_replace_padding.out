@@ -1,0 +1,14 @@
+wandb: Currently logged in as: stevramos (use `wandb login --relogin` to force relogin)
+wandb: wandb version 0.10.17 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.10.15
+wandb: Syncing run electric-glitter-60
+wandb: ⭐️ View project at https://wandb.ai/stevramos/cose_pytorch
+wandb: 🚀 View run at https://wandb.ai/stevramos/cose_pytorch/runs/29h7ydh5
+wandb: Run data is saved locally in /home/ajimenez/CoSE-pytorch/wandb/run-20210204_233002-29h7ydh5
+wandb: Run `wandb offline` to turn off syncing.
+Training in GeForce RTX 2080 Ti
+  0%|          | 0/150 [00:00<?, ?it/s]/home/ajimenez/CoSE-pytorch/models/gmm.py:42: UserWarning: Implicit dimension choice for softmax has been deprecated. Change the call to include dim=X as an argument.
+  out_pi = torch.nn.functional.softmax(out_pi)
+/usr/lib/python3.6/multiprocessing/semaphore_tracker.py:143: UserWarning: semaphore_tracker: There appear to be 6 leaked semaphores to clean up at shutdown
+  len(cache))

@@ -41,13 +41,13 @@
         "end_positions": false
     },
     "training_params":{
-        "input_type": "hybrid",
-        "replace_padding": false,
+        "input_type": "order",
+        "replace_padding": true,
         "stop_predictive_grad": true,
         "num_epochs":150,
         "lr_ae":1e-3,
-        "lr_pos_pred":1e-3,
-        "lr_emb_pred":1e-3
+        "lr_pos_pred":1e-4,
+        "lr_emb_pred":1e-4
     },
     "general_config":{
         "use_gpu": true,
