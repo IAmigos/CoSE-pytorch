@@ -149,5 +149,6 @@ pesos_descargados/
 
 #all save files
 *.save
+*.out
 #user files
 Alex*
