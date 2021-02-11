@@ -155,3 +155,26 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     os.environ["PYTHONHASHSEED"] = str(seed)
+
+    
+def mask_target(inputs, device):
+    """
+    inputs: shape (batch_size, sequence_length, num_features)
+    result_final: shape (batch_size, sequence_length, sequence_length)
+    1: appears
+    0: doesnt appear
+    """
+    mask = inputs[:,:,0].detach().clone()
+    mask[mask!=0] = 1
+    mask[mask!=1] = 0
+    mask = (mask==1)
+    mask = mask.unsqueeze(dim=1).repeat(1,mask.shape[1],1).reshape(mask.shape[0], mask.shape[-1],-1)
+    
+    nopeak_mask = np.triu(np.ones((enc_inputs.shape[0], enc_inputs.shape[1], enc_inputs.shape[1])),k=1).astype('uint8')
+    nopeak_mask = Variable(torch.from_numpy(nopeak_mask) == 0)
+
+    nopeak_mask = nopeak_mask.to(device)
+    
+    result_final = (nopeak_mask & mask).gt(0).to(torch.float32)
+    
+    return result_final
