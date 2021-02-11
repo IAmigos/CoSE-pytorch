@@ -41,7 +41,7 @@
         "end_positions": false
     },
     "training_params":{
-        "input_type": "order",
+        "input_type": "random",
         "replace_padding": true,
         "stop_predictive_grad": true,
         "num_epochs":150,

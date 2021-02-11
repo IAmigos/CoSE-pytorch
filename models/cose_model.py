@@ -16,6 +16,7 @@ from tqdm import tqdm
 import os
 torch.cuda.empty_cache()
 from random import randint
+import sys
 
 class CoSEModel(nn.Module):
     def __init__(self,
@@ -32,7 +33,7 @@ class CoSEModel(nn.Module):
 
         self.config = configure_model(config_file, self.use_wandb)
 
-        self.device = torch.device("cuda:3" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:0" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
@@ -257,6 +258,7 @@ class CoSEModel(nn.Module):
             #                                                                                 replace_padding = self.config.replace_padding,
             #                                                                                 end_positions = self.config.end_positions,
             #                                                                                 device = self.device)
+
             # Detaching gradients of pred_targets (Teacher forcing)
             if self.config.stop_predictive_grad:
                 sampled_input_start_pos = sampled_input_start_pos.detach().to(self.device)
@@ -276,10 +278,19 @@ class CoSEModel(nn.Module):
             # Position model
             pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, sampled_seq_len_emb.int(), None)
             # calculating loss
-            loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi).mean())
-            loss_pos_pred = -1*(logli_gmm_logsumexp(sampled_target_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).mean())
-            loss_emb_pred = -1*(logli_gmm_logsumexp(sampled_target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi).mean())
+            print("t_target_ink.shape", t_target_ink.shape)
+            print("sampled_target_start_pos", sampled_target_start_pos.shape)
+            print("sampled_target_emb", sampled_target_emb.shape)
+            print("sampled_seq_len_emb", sampled_seq_len_emb.min())
             
+            loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi))
+            loss_pos_pred = -1*(logli_gmm_logsumexp(sampled_target_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi))
+            loss_emb_pred = -1*(logli_gmm_logsumexp(sampled_target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi))
+            
+            print("loss_ae", loss_ae.shape)
+            print("loss_pos_pred", loss_pos_pred.shape)
+            print("loss_emb_pred", loss_emb_pred.shape)
+            sys.exit(0)
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
             #sys.exit(0)
             loss_total.backward()

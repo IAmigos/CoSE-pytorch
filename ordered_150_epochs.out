@@ -954,3 +954,306 @@ Epoch [118/150], Loss train autoencoder: 1.6730
 Epoch [118/150], Loss train position prediction: -0.3936
 Epoch [118/150], Loss train embedding prediction: -4.6145
 Epoch [118/150], Loss train total: -3.3351
+Epoch [118/150], Loss eval autoencoder: 4535.2941
+Epoch [118/150], Loss eval position prediction: 3.2009
+Epoch [118/150], Loss eval embedding prediction: -4.4502
+Epoch [118/150], Loss eval total: 4534.0447
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 79%|███████▊  | 118/150 [20:02:42<5:54:55, 665.49s/it]Losses
+Epoch [119/150], Loss train autoencoder: -6.1547
+Epoch [119/150], Loss train position prediction: -0.2657
+Epoch [119/150], Loss train embedding prediction: -5.0854
+Epoch [119/150], Loss train total: -11.5058
+ 79%|███████▉  | 119/150 [20:07:59<4:49:55, 561.14s/it]Losses
+Epoch [120/150], Loss train autoencoder: -5.3511
+Epoch [120/150], Loss train position prediction: -0.3614
+Epoch [120/150], Loss train embedding prediction: -4.9389
+Epoch [120/150], Loss train total: -10.6514
+Epoch [120/150], Loss eval autoencoder: 5522.2282
+Epoch [120/150], Loss eval position prediction: 3.6645
+Epoch [120/150], Loss eval embedding prediction: -4.1488
+Epoch [120/150], Loss eval total: 5521.7439
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 80%|████████  | 120/150 [20:23:14<5:33:32, 667.07s/it]Losses
+Epoch [121/150], Loss train autoencoder: -6.1387
+Epoch [121/150], Loss train position prediction: -0.1050
+Epoch [121/150], Loss train embedding prediction: -4.7904
+Epoch [121/150], Loss train total: -11.0341
+ 81%|████████  | 121/150 [20:28:28<4:31:21, 561.44s/it]Losses
+Epoch [122/150], Loss train autoencoder: -5.2291
+Epoch [122/150], Loss train position prediction: -0.1844
+Epoch [122/150], Loss train embedding prediction: -4.5757
+Epoch [122/150], Loss train total: -9.9893
+Epoch [122/150], Loss eval autoencoder: 4513.6936
+Epoch [122/150], Loss eval position prediction: 3.2384
+Epoch [122/150], Loss eval embedding prediction: -3.8273
+Epoch [122/150], Loss eval total: 4513.1047
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 81%|████████▏ | 122/150 [20:43:45<5:11:43, 668.00s/it]Losses
+Epoch [123/150], Loss train autoencoder: -6.2106
+Epoch [123/150], Loss train position prediction: -0.2674
+Epoch [123/150], Loss train embedding prediction: -5.0298
+Epoch [123/150], Loss train total: -11.5078
+ 82%|████████▏ | 123/150 [20:49:03<4:13:16, 562.83s/it]Losses
+Epoch [124/150], Loss train autoencoder: -5.2865
+Epoch [124/150], Loss train position prediction: -0.2826
+Epoch [124/150], Loss train embedding prediction: -5.4157
+Epoch [124/150], Loss train total: -10.9847
+Epoch [124/150], Loss eval autoencoder: 5400.7650
+Epoch [124/150], Loss eval position prediction: 3.2174
+Epoch [124/150], Loss eval embedding prediction: -4.3397
+Epoch [124/150], Loss eval total: 5399.6427
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 83%|████████▎ | 124/150 [21:04:03<4:47:48, 664.18s/it]Losses
+Epoch [125/150], Loss train autoencoder: -6.4606
+Epoch [125/150], Loss train position prediction: -0.2127
+Epoch [125/150], Loss train embedding prediction: -4.7985
+Epoch [125/150], Loss train total: -11.4718
+ 83%|████████▎ | 125/150 [21:09:12<3:52:15, 557.44s/it]Losses
+Epoch [126/150], Loss train autoencoder: -6.2913
+Epoch [126/150], Loss train position prediction: -0.1913
+Epoch [126/150], Loss train embedding prediction: -5.3003
+Epoch [126/150], Loss train total: -11.7829
+Epoch [126/150], Loss eval autoencoder: 5310.5805
+Epoch [126/150], Loss eval position prediction: 3.4199
+Epoch [126/150], Loss eval embedding prediction: -4.2818
+Epoch [126/150], Loss eval total: 5309.7186
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 84%|████████▍ | 126/150 [21:24:06<4:23:21, 658.39s/it]Losses
+Epoch [127/150], Loss train autoencoder: -6.3000
+Epoch [127/150], Loss train position prediction: -0.3014
+Epoch [127/150], Loss train embedding prediction: -5.1901
+Epoch [127/150], Loss train total: -11.7915
+ 85%|████████▍ | 127/150 [21:29:18<3:32:33, 554.48s/it]Losses
+Epoch [128/150], Loss train autoencoder: -6.3104
+Epoch [128/150], Loss train position prediction: -0.3992
+Epoch [128/150], Loss train embedding prediction: -4.6977
+Epoch [128/150], Loss train total: -11.4072
+Epoch [128/150], Loss eval autoencoder: 6160.7718
+Epoch [128/150], Loss eval position prediction: 3.3800
+Epoch [128/150], Loss eval embedding prediction: -4.4277
+Epoch [128/150], Loss eval total: 6159.7240
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 85%|████████▌ | 128/150 [21:44:07<4:00:12, 655.10s/it]Losses
+Epoch [129/150], Loss train autoencoder: -6.3861
+Epoch [129/150], Loss train position prediction: -0.2868
+Epoch [129/150], Loss train embedding prediction: -5.3838
+Epoch [129/150], Loss train total: -12.0567
+ 86%|████████▌ | 129/150 [21:49:21<3:13:24, 552.61s/it]Losses
+Epoch [130/150], Loss train autoencoder: -6.1182
+Epoch [130/150], Loss train position prediction: -0.3697
+Epoch [130/150], Loss train embedding prediction: -5.3573
+Epoch [130/150], Loss train total: -11.8452
+Epoch [130/150], Loss eval autoencoder: 5577.6792
+Epoch [130/150], Loss eval position prediction: 3.6418
+Epoch [130/150], Loss eval embedding prediction: -4.4566
+Epoch [130/150], Loss eval total: 5576.8644
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 87%|████████▋ | 130/150 [22:04:15<3:38:21, 655.07s/it]Losses
+Epoch [131/150], Loss train autoencoder: -6.3418
+Epoch [131/150], Loss train position prediction: -0.1056
+Epoch [131/150], Loss train embedding prediction: -4.8851
+Epoch [131/150], Loss train total: -11.3324
+ 87%|████████▋ | 131/150 [22:09:26<2:54:42, 551.69s/it]Losses
+Epoch [132/150], Loss train autoencoder: -6.4993
+Epoch [132/150], Loss train position prediction: -0.2181
+Epoch [132/150], Loss train embedding prediction: -5.1502
+Epoch [132/150], Loss train total: -11.8676
+Epoch [132/150], Loss eval autoencoder: 4369.1885
+Epoch [132/150], Loss eval position prediction: 3.4027
+Epoch [132/150], Loss eval embedding prediction: -4.4220
+Epoch [132/150], Loss eval total: 4368.1692
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 88%|████████▊ | 132/150 [22:24:20<3:16:19, 654.42s/it]Losses
+Epoch [133/150], Loss train autoencoder: -6.6098
+Epoch [133/150], Loss train position prediction: -0.2745
+Epoch [133/150], Loss train embedding prediction: -5.2670
+Epoch [133/150], Loss train total: -12.1513
+ 89%|████████▊ | 133/150 [22:29:29<2:36:02, 550.75s/it]Losses
+Epoch [134/150], Loss train autoencoder: -5.7261
+Epoch [134/150], Loss train position prediction: -0.3265
+Epoch [134/150], Loss train embedding prediction: -5.7594
+Epoch [134/150], Loss train total: -11.8120
+Epoch [134/150], Loss eval autoencoder: 5523.2690
+Epoch [134/150], Loss eval position prediction: 3.4730
+Epoch [134/150], Loss eval embedding prediction: -4.5109
+Epoch [134/150], Loss eval total: 5522.2311
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 89%|████████▉ | 134/150 [22:44:22<2:54:19, 653.72s/it]Losses
+Epoch [135/150], Loss train autoencoder: -6.3263
+Epoch [135/150], Loss train position prediction: -0.2347
+Epoch [135/150], Loss train embedding prediction: -5.0649
+Epoch [135/150], Loss train total: -11.6259
+ 90%|█████████ | 135/150 [22:49:34<2:17:46, 551.11s/it]Losses
+Epoch [136/150], Loss train autoencoder: -6.2741
+Epoch [136/150], Loss train position prediction: -0.2029
+Epoch [136/150], Loss train embedding prediction: -5.4453
+Epoch [136/150], Loss train total: -11.9222
+Epoch [136/150], Loss eval autoencoder: 5201.9159
+Epoch [136/150], Loss eval position prediction: 3.5722
+Epoch [136/150], Loss eval embedding prediction: -4.3019
+Epoch [136/150], Loss eval total: 5201.1862
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 91%|█████████ | 136/150 [23:04:26<2:32:28, 653.44s/it]Losses
+Epoch [137/150], Loss train autoencoder: -5.9235
+Epoch [137/150], Loss train position prediction: -0.3190
+Epoch [137/150], Loss train embedding prediction: -5.4690
+Epoch [137/150], Loss train total: -11.7114
+ 91%|█████████▏| 137/150 [23:09:39<1:59:25, 551.21s/it]Losses
+Epoch [138/150], Loss train autoencoder: -6.4582
+Epoch [138/150], Loss train position prediction: -0.4497
+Epoch [138/150], Loss train embedding prediction: -5.0390
+Epoch [138/150], Loss train total: -11.9470
+Epoch [138/150], Loss eval autoencoder: 5703.9529
+Epoch [138/150], Loss eval position prediction: 3.5181
+Epoch [138/150], Loss eval embedding prediction: -4.5479
+Epoch [138/150], Loss eval total: 5702.9232
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 92%|█████████▏| 138/150 [23:24:33<2:10:49, 654.11s/it]Losses
+Epoch [139/150], Loss train autoencoder: -5.4521
+Epoch [139/150], Loss train position prediction: -0.2993
+Epoch [139/150], Loss train embedding prediction: -5.6319
+Epoch [139/150], Loss train total: -11.3833
+ 93%|█████████▎| 139/150 [23:29:42<1:40:55, 550.52s/it]Losses
+Epoch [140/150], Loss train autoencoder: -5.8116
+Epoch [140/150], Loss train position prediction: -0.4151
+Epoch [140/150], Loss train embedding prediction: -5.6247
+Epoch [140/150], Loss train total: -11.8513
+Epoch [140/150], Loss eval autoencoder: 7179.2212
+Epoch [140/150], Loss eval position prediction: 3.5969
+Epoch [140/150], Loss eval embedding prediction: -4.5740
+Epoch [140/150], Loss eval total: 7178.2441
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 93%|█████████▎| 140/150 [23:44:34<1:48:49, 652.99s/it]Losses
+Epoch [141/150], Loss train autoencoder: -6.2475
+Epoch [141/150], Loss train position prediction: -0.1503
+Epoch [141/150], Loss train embedding prediction: -5.2815
+Epoch [141/150], Loss train total: -11.6794
+ 94%|█████████▍| 141/150 [23:49:44<1:22:30, 550.03s/it]Losses
+Epoch [142/150], Loss train autoencoder: -6.3878
+Epoch [142/150], Loss train position prediction: -0.2480
+Epoch [142/150], Loss train embedding prediction: -5.4245
+Epoch [142/150], Loss train total: -12.0603
+Epoch [142/150], Loss eval autoencoder: 7788.9438
+Epoch [142/150], Loss eval position prediction: 3.5152
+Epoch [142/150], Loss eval embedding prediction: -4.5729
+Epoch [142/150], Loss eval total: 7787.8861
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 95%|█████████▍| 142/150 [24:04:33<1:26:55, 651.88s/it]Losses
+Epoch [143/150], Loss train autoencoder: -6.4565
+Epoch [143/150], Loss train position prediction: -0.3077
+Epoch [143/150], Loss train embedding prediction: -5.4942
+Epoch [143/150], Loss train total: -12.2584
+ 95%|█████████▌| 143/150 [24:09:45<1:04:07, 549.63s/it]Losses
+Epoch [144/150], Loss train autoencoder: -6.2650
+Epoch [144/150], Loss train position prediction: -0.3540
+Epoch [144/150], Loss train embedding prediction: -6.0138
+Epoch [144/150], Loss train total: -12.6328
+Epoch [144/150], Loss eval autoencoder: 9264.5122
+Epoch [144/150], Loss eval position prediction: 3.4840
+Epoch [144/150], Loss eval embedding prediction: -4.6142
+Epoch [144/150], Loss eval total: 9263.3820
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 96%|█████████▌| 144/150 [24:24:33<1:05:07, 651.27s/it]Losses
+Epoch [145/150], Loss train autoencoder: -6.5837
+Epoch [145/150], Loss train position prediction: -0.2405
+Epoch [145/150], Loss train embedding prediction: -5.3413
+Epoch [145/150], Loss train total: -12.1655
+ 97%|█████████▋| 145/150 [24:29:45<45:47, 549.56s/it]  Losses
+Epoch [146/150], Loss train autoencoder: -6.4911
+Epoch [146/150], Loss train position prediction: -0.2455
+Epoch [146/150], Loss train embedding prediction: -5.8681
+Epoch [146/150], Loss train total: -12.6047
+Epoch [146/150], Loss eval autoencoder: 8180.1702
+Epoch [146/150], Loss eval position prediction: 3.6081
+Epoch [146/150], Loss eval embedding prediction: -4.5418
+Epoch [146/150], Loss eval total: 8179.2364
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 97%|█████████▋| 146/150 [24:44:35<43:26, 651.72s/it]Losses
+Epoch [147/150], Loss train autoencoder: -6.3467
+Epoch [147/150], Loss train position prediction: -0.3481
+Epoch [147/150], Loss train embedding prediction: -5.7361
+Epoch [147/150], Loss train total: -12.4309
+ 98%|█████████▊| 147/150 [24:49:49<27:31, 550.35s/it]Losses
+Epoch [148/150], Loss train autoencoder: -4.2696
+Epoch [148/150], Loss train position prediction: -0.4397
+Epoch [148/150], Loss train embedding prediction: -5.3818
+Epoch [148/150], Loss train total: -10.0911
+Epoch [148/150], Loss eval autoencoder: 2040.9590
+Epoch [148/150], Loss eval position prediction: 3.4412
+Epoch [148/150], Loss eval embedding prediction: -4.9044
+Epoch [148/150], Loss eval total: 2039.4958
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+ 99%|█████████▊| 148/150 [25:04:45<21:47, 653.92s/it]Losses
+Epoch [149/150], Loss train autoencoder: -5.1977
+Epoch [149/150], Loss train position prediction: -0.3411
+Epoch [149/150], Loss train embedding prediction: -6.0387
+Epoch [149/150], Loss train total: -11.5775
+ 99%|█████████▉| 149/150 [25:09:59<09:12, 552.17s/it]Losses
+Epoch [150/150], Loss train autoencoder: -4.2489
+Epoch [150/150], Loss train position prediction: -0.4357
+Epoch [150/150], Loss train embedding prediction: -5.7757
+Epoch [150/150], Loss train total: -10.4602
+Epoch [150/150], Loss eval autoencoder: 5408.6331
+Epoch [150/150], Loss eval position prediction: 3.5843
+Epoch [150/150], Loss eval embedding prediction: -4.6489
+Epoch [150/150], Loss eval total: 5407.5685
+WARNING:root:Images sizes do not match. This will causes images to be display incorrectly in the UI.
+wandb: WARNING Symlinked 4 files into the W&B run directory, call wandb.save again to sync new files.
+100%|██████████| 150/150 [25:25:24<00:00, 663.87s/it]100%|██████████| 150/150 [25:25:24<00:00, 610.16s/it]
+wandb: Waiting for W&B process to finish, PID 10336
+wandb: Program ended successfully.
+wandb: - 830.75MB of 840.65MB uploaded (0.00MB deduped)wandb: \ 476.83MB of 841.84MB uploaded (0.00MB deduped)wandb: | 228.39MB of 841.84MB uploaded (0.00MB deduped)wandb: / 231.24MB of 841.84MB uploaded (0.00MB deduped)wandb: - 234.75MB of 841.84MB uploaded (0.00MB deduped)wandb: \ 238.16MB of 841.84MB uploaded (0.00MB deduped)wandb: | 238.16MB of 841.84MB uploaded (0.00MB deduped)wandb: / 358.17MB of 841.84MB uploaded (0.00MB deduped)wandb: - 375.03MB of 841.84MB uploaded (0.00MB deduped)wandb: \ 467.00MB of 841.84MB uploaded (0.00MB deduped)wandb: | 525.88MB of 841.84MB uploaded (0.00MB deduped)wandb: / 613.07MB of 841.84MB uploaded (0.00MB deduped)wandb: - 668.64MB of 841.84MB uploaded (0.00MB deduped)wandb: \ 670.95MB of 841.84MB uploaded (0.00MB deduped)wandb: | 672.28MB of 841.84MB uploaded (0.00MB deduped)wandb: / 673.37MB of 841.84MB uploaded (0.00MB deduped)wandb: - 674.16MB of 841.84MB uploaded (0.00MB deduped)wandb: \ 674.16MB of 841.84MB uploaded (0.00MB deduped)wandb: | 674.16MB of 841.84MB uploaded (0.00MB deduped)wandb: / 674.16MB of 841.84MB uploaded (0.00MB deduped)wandb: - 814.56MB of 841.84MB uploaded (0.00MB deduped)wandb: \ 824.91MB of 841.84MB uploaded (0.00MB deduped)wandb: | 836.10MB of 841.84MB uploaded (0.00MB deduped)wandb: / 841.35MB of 841.84MB uploaded (0.00MB deduped)wandb: - 841.84MB of 841.84MB uploaded (0.00MB deduped)wandb: \ 841.84MB of 841.84MB uploaded (0.00MB deduped)wandb:                                                                                
+wandb: Find user logs for this run at: /home/ajimenez/CoSE-pytorch/wandb/run-20210204_232721-1vavmwct/logs/debug.log
+wandb: Find internal logs for this run at: /home/ajimenez/CoSE-pytorch/wandb/run-20210204_232721-1vavmwct/logs/debug-internal.log
+wandb: Run summary:
+wandb:                                                                     train_epoch 150
+wandb:                                                                   loss_train_ae -4.2489
+wandb:                                                             loss_train_pos_pred -0.43568
+wandb:                                                             loss_train_emb_pred -5.77566
+wandb:                                                                loss_train_total -10.46024
+wandb:                                                                           _step 149
+wandb:                                                                        _runtime 91530
+wandb:                                                                      _timestamp 1612590771
+wandb:                                                          recon_chamfer_distance 0.03499
+wandb:                                                           pred_chamfer_distance 14.73099
+wandb:                                                                    loss_eval_ae 5408.63307
+wandb:                                                              loss_eval_pos_pred 3.58435
+wandb:                                                              loss_eval_emb_pred -4.6489
+wandb:                                                                 loss_eval_total 5407.56851
+wandb: Run history:
+wandb:              train_epoch ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇███
+wandb:            loss_train_ae ▄▄▄▄▄▃▃▂▄▂▂▂▂▂▂▂▂▁▂▁▁▂▁▁▁▁▁▃▂▁▂█▂▁▁▂▁▁▁▃
+wandb:      loss_train_pos_pred █▇▅▆▅▄▄▄▅▄▃▅▃▂▃▃▄▃▂▃▂▂▃▂▃▃▂▃▁▃▂▁▃▃▂▂▁▂▃▁
+wandb:      loss_train_emb_pred ▇██▇▇▆▅▅▅▄▅▄▄▄▃▄▄▃▃▃▃▃▃▃▃▂▂▂▃▂▂▂▂▁▁▁▂▁▁▁
+wandb:         loss_train_total ████▇▆▅▅▆▄▄▅▃▃▃▄▃▃▃▂▃▃▂▂▂▂▂▃▂▂▂▇▃▁▁▁▁▁▁▂
+wandb:                    _step ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇███
+wandb:                 _runtime ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▄▅▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇███
+wandb:               _timestamp ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▄▅▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇███
+wandb:   recon_chamfer_distance █▅▅▄▃▂▂▂▂▂▂▂▂▂▁▁▁▁▂▁▁▁▁▁▁▁▁▂▁▁▁▂▁▁▁▁▁▁▁▁
+wandb:    pred_chamfer_distance ▁▁▅▂▃▃▃▃▄▆▆▇█▇█▅▇██▇███▆▇██▇▆▆▇▇█▇▇▇▇▇▅▅
+wandb:             loss_eval_ae ▁▁▁▁▁▁▁▁▁▂▂▂▃▃▃▃▄▄▃▃▃▂▄▄▄▄▄▂▃▃▃▅▅▆▆▆▆██▆
+wandb:       loss_eval_pos_pred ▁▂▁▂▂▃▃▃▃▄▄▄▄▅▅▅▅▆▆▅▆▆▅▆▆▆▇▆▇▇▆▇▇▇█▇████
+wandb:       loss_eval_emb_pred ▇█▇▇▇▅▅▄▄▄▄▄▄▄▃▃▃▃▃▃▃▃▃▃▂▂▂▂▂▂▂▁▂▁▁▁▁▁▁▁
+wandb:          loss_eval_total ▁▁▁▁▁▁▁▁▁▂▂▂▃▃▃▃▄▄▃▃▃▂▄▄▄▄▄▂▃▃▃▅▅▆▆▆▆██▆
+wandb: 
+wandb: Synced 5 W&B file(s), 1654 media file(s), 0 artifact file(s) and 300 other file(s)
+wandb: 
+wandb: Synced apricot-deluge-58: https://wandb.ai/stevramos/cose_pytorch/runs/1vavmwct
+
