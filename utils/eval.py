@@ -80,9 +80,6 @@ def get_prediction_metrics(encoder_inputs, strok_len_inputs, diagram_embedding, 
             emb_pred_mu, emb_pred_sigma, emb_pred_pi = embedding_predictive_model(inp_pos_model, inp_num_strokes, tgt_cond)
             emb_pred = embedding_predictive_model.draw_sample(emb_pred_mu, emb_pred_sigma, emb_pred_pi)
             #losses
-            #loss_pos_pred += -1*(logli_gmm_logsumexp(inp_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).mean())
-            #loss_emb_pred += -1*(logli_gmm_logsumexp(target_diagram, emb_pred_mu, emb_pred_sigma, emb_pred_pi).mean())
-            #print(-1*(logli_gmm_logsumexp(inp_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).mean()))
             loss_pos_pred.append(-1*(logli_gmm_logsumexp(inp_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).mean()).item())
             loss_emb_pred.append(-1*(logli_gmm_logsumexp(target_diagram, emb_pred_mu, emb_pred_sigma, emb_pred_pi).mean()).item())
             #updating diagrams for autoregressiveness

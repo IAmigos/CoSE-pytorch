@@ -39,7 +39,7 @@ class TransformerGMM(nn.Module):
 
     def forward(self, src, num_strokes, tgt_cond = None, src_mask =  None):
         output = self.dense1(src.permute(1,0,2))
-        output = self.transformer_decoder(output, output).permute(1,0,2)
+        output = self.transformer_decoder(output, output, tgt_mask  = src_mask, memory_mask = src_mask).permute(1,0,2)
         output = self.get_last_stroke(output, num_strokes)
         if tgt_cond is not None:
             output = torch.cat([output, tgt_cond], dim = 1)

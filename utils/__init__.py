@@ -11,6 +11,7 @@ import torch
 import numpy as np
 import random
 import os
+from torch.autograd import Variable
 
 def parse_arguments():
     ap = argparse.ArgumentParser()
@@ -157,7 +158,7 @@ def set_seed(seed):
     os.environ["PYTHONHASHSEED"] = str(seed)
 
     
-def mask_target(inputs, device):
+def mask_target(inputs, device, n_heads=4):
     """
     inputs: shape (batch_size, sequence_length, num_features)
     result_final: shape (batch_size, sequence_length, sequence_length)
@@ -170,11 +171,14 @@ def mask_target(inputs, device):
     mask = (mask==1)
     mask = mask.unsqueeze(dim=1).repeat(1,mask.shape[1],1).reshape(mask.shape[0], mask.shape[-1],-1)
     
-    nopeak_mask = np.triu(np.ones((enc_inputs.shape[0], enc_inputs.shape[1], enc_inputs.shape[1])),k=1).astype('uint8')
+    nopeak_mask = np.triu(np.ones((inputs.shape[0], inputs.shape[1], inputs.shape[1])),k=1).astype('uint8')
     nopeak_mask = Variable(torch.from_numpy(nopeak_mask) == 0)
 
     nopeak_mask = nopeak_mask.to(device)
     
     result_final = (nopeak_mask & mask).gt(0).to(torch.float32)
-    
-    return result_final
+
+    result_final = result_final.masked_fill(result_final == 0, float('-inf'))
+    result_final = result_final.masked_fill(result_final == 1, float(0))
+
+    return result_final.repeat_interleave(n_heads, dim = 0)

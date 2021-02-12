@@ -77,8 +77,8 @@ class CoSEModel(nn.Module):
             start_coord = batch_input['start_coord'].squeeze(dim = 0).squeeze().to(self.device)
             #forward autoregressive
             with torch.no_grad():
-                _, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device)
-                encoder_out = self.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, look_ahead_mask)
+                comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device, self.config.enc_nhead)
+                encoder_out = self.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
                 diagram_embedding, padded_max_num_strokes, _, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes)
                 start_pos_base = start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
                 #calculate recon_cd, pred_cd, diagram output
@@ -223,26 +223,23 @@ class CoSEModel(nn.Module):
         
         for batch_input, batch_target in iter(train_loader):
 
-            #self.encoder.zero_grad()
-            #self.decoder.zero_grad()
-            #self.embedding_predictive_model.zero_grad()
-            #self.position_predictive_model.zero_grad()
             optimizer_pos_pred.zero_grad()
             optimizer_emb_pred.zero_grad()
-            optimizer_ae.zero_grad()            
+            optimizer_ae.zero_grad()
+            if i < 3:
+                pass            
             # Parsing inputs
             enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input,self.device)
             t_target_ink = parse_targets(batch_target,self.device)
             # Creating sequence length mask
-            _, look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs, self.device)
+            comb_mask , look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs, self.device, self.config.enc_nhead)
             # Encoder forward
-            encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, look_ahead_mask)
+            encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, comb_mask)
             # decoder forward
             encoder_out_reshaped = encoder_out.unsqueeze(dim=1).repeat(1,t_inputs.shape[1],1).reshape(-1, encoder_out.shape[-1])
             t_inputs_reshaped = t_inputs.reshape(-1,1)
             decoder_inp = torch.cat([encoder_out_reshaped, t_inputs_reshaped], dim = 1)
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
-            
             set_seed(randint(0,100))
             # Random/Ordered Sampling
             sampled_input_start_pos, sampled_input_emb,sampled_seq_len_emb,sampled_target_start_pos,sampled_target_emb = random_index_sampling(encoder_out = encoder_out, inputs_start_coord = inputs_start_coord,
@@ -272,27 +269,21 @@ class CoSEModel(nn.Module):
             pos_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos], dim = 2)
             ## pred_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos, sampled_target_start_pos.unsqueeze(dim = 1).repeat(1, sampled_input_start_pos.shape[1], 1)], dim = 2)
             tgt_cond = sampled_target_start_pos.squeeze(dim = 1)
+            #creating mask
+            seq_len_inputs = sampled_seq_len_emb.int().to(self.device)
+            seq_mask_rel = 1 - (torch.arange(seq_len_inputs.max().item()).to(self.device)[None, :] < seq_len_inputs[:, None]).float()
+            seq_mask_rel  = seq_mask_rel.masked_fill(seq_mask_rel == 1, float('-inf')).unsqueeze(dim=1).repeat(1,seq_mask_rel.shape[1],1).repeat_interleave(self.config.rel_nhead,dim = 0)         
             # Predictive model Teacher forcing
-            ## emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pred_model_inputs, sampled_seq_len_emb.int(), None)
-            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pos_model_inputs, sampled_seq_len_emb.int(), tgt_cond)
+            emb_pred_mu, emb_pred_sigma, emb_pred_pi = self.embedding_predictive_model(pos_model_inputs, seq_len_inputs, tgt_cond, src_mask  = seq_mask_rel)
             # Position model
-            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, sampled_seq_len_emb.int(), None)
+            pos_pred_mu, pos_pred_sigma, pos_pred_pi = self.position_predictive_model(pos_model_inputs, seq_len_inputs, None, src_mask  = seq_mask_rel)
             # calculating loss
-            print("t_target_ink.shape", t_target_ink.shape)
-            print("sampled_target_start_pos", sampled_target_start_pos.shape)
-            print("sampled_target_emb", sampled_target_emb.shape)
-            print("sampled_seq_len_emb", sampled_seq_len_emb.min())
             
-            loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi))
-            loss_pos_pred = -1*(logli_gmm_logsumexp(sampled_target_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi))
-            loss_emb_pred = -1*(logli_gmm_logsumexp(sampled_target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi))
-            
-            print("loss_ae", loss_ae.shape)
-            print("loss_pos_pred", loss_pos_pred.shape)
-            print("loss_emb_pred", loss_emb_pred.shape)
-            sys.exit(0)
+            loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi)[t_target_ink.sum(dim=1) != 0].mean())
+            loss_pos_pred = -1*(logli_gmm_logsumexp(sampled_target_start_pos, pos_pred_mu, pos_pred_sigma, pos_pred_pi).mean())
+            loss_emb_pred = -1*(logli_gmm_logsumexp(sampled_target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi).mean())
+            #
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
-            #sys.exit(0)
             loss_total.backward()
 
             optimizer_pos_pred.step()
