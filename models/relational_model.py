@@ -50,5 +50,5 @@ class TransformerGMM(nn.Module):
         
         return out_mu, out_sigma, out_pi
 
-    def draw_sample(self, out_mu, out_sigma, out_pi):
-        return self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=True)
+    def draw_sample(self, out_mu, out_sigma, out_pi, greedy = True ):
+        return self.gmm.draw_sample(out_mu, out_sigma, out_pi, greedy=greedy)

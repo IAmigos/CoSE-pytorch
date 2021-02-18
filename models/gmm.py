@@ -45,6 +45,7 @@ class OutputModelGMMDense(nn.Module):
     def draw_sample(self, out_mu, out_sigma, out_pi, greedy:bool=False, greedy_mu:bool=True, temp:float =0.5):
         '''
         Obtains 2D strokes from mu, sigma, pis returned by GMM
+        TODO: Revisar la correcta forma del draw sample en inferencia (suma ponderada), (random walk) [explorar otras formas mas robustas de sampleo]
         '''
         is_2d = True
         if out_mu.dim() == 3:
@@ -84,7 +85,7 @@ class OutputModelGMMDense(nn.Module):
         else:
             return sample
 
-    def draw_sample_every_component(self, outputs:dict, greedy:bool=False):
+    def draw_sample_every_component(self, out_mu, out_sigma, out_pi, greedy:bool=False):
         """Draws a sample from every GMM component.
     
         Args:
@@ -97,20 +98,16 @@ class OutputModelGMMDense(nn.Module):
         sample tensor - (batch_size, seq_len, n_components, feature_size)
         pi values - (batch_size, seq_len, n_components)
         """
-        mu = outputs["mu"]
-        sigma = outputs["sigma"]
-        pi = outputs["pi"]
-
-        out_shape = mu.shape
+        out_shape = out_mu.shape
         seq_len = 1
-        if mu.dim() == 3:
+        if out_mu.dim() == 3:
             seq_len = out_shape[1]
         batch_size = out_shape[0]
         comp_shape = (batch_size, seq_len, self.out_units, self.num_components)
 
-        mu = outputs["mu"].reshape(comp_shape).permute(0, 1, 3, 2)
-        sigma = outputs["sigma"].reshape(comp_shape).permute(0, 1, 3, 2)
-        pi = outputs["pi"].reshape(batch_size, seq_len, self.num_components)
+        mu = out_mu.reshape(comp_shape).permute(0, 1, 3, 2)
+        sigma = out_sigma.reshape(comp_shape).permute(0, 1, 3, 2)
+        pi = out_pi.reshape(batch_size, seq_len, self.num_components)
 
         if greedy:
             sample = mu

@@ -151,4 +151,5 @@ pesos_descargados/
 *.save
 *.out
 #user files
-Alex*
+Alex_pruebas.ipynb
+Alex_train_step.ipynb
