@@ -38,14 +38,84 @@ def eval_parse_target(batch_target, device):
     target_ink = batch_target['t_target_ink'].squeeze(dim = 0)
     target_strok_len = batch_target["seq_len"].squeeze(dim = 0)
     target_pos = batch_target["start_coord"].squeeze(dim =  0)
+    target_end_coord = batch_target["end_coord"].squeeze(dim =  0)
     target_strokes = batch_target["stroke"].squeeze(dim = 0)
+    target_pen = batch_target["pen"].squeeze(dim=0)
+    target_num_strokes = batch_target["num_strokes"].item()
     #save to devices
     target_ink = target_ink.to(device)
     target_strok_len = target_strok_len.to(device)
     target_pos = target_pos.to(device)
     target_strokes = target_strokes.to(device)
+    target_pen = target_pen.to(device)
+    target_end_coord = target_end_coord.to(device)
 
-    return target_ink, target_strok_len, target_pos, target_strokes
+    return target_ink, target_strok_len, target_pos, target_strokes, target_pen, target_num_strokes, target_end_coord
+
+
+def prediction_position_ar(target_strokes, target_pos, target_end_coord,seq_len, target_num_strokes, std_channel, mean_channel, embedding, device, position_predictive_model, pred_end_positions=False):
+    '''
+        Args:
+        embedding: output of encoder
+        ...
+    '''
+    target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, device)
+    all_strokes = torch.cat(target_strokes_list)
+
+    ## must changed to numpy, i dont think its gonna work with torch
+    x_min, x_max = get_min_max(all_strokes[:, 0], 0.3)
+    y_min, y_max = get_min_max(all_strokes[:, 1], 0.3)
+    v_min, v_max = None, None
+
+    n_strokes = target_num_strokes + 5
+    context_ids = 2
+
+    context_embeddings = embedding[:, :context_ids, :]
+
+    start_positions = target_pos.permute(1,0,2)
+    end_positions = target_end_coord.permute(1,0,2)
+
+    ar_start_pos = torch.split(start_positions[:,:context_ids,:], 1,dim=1)
+    ar_end_pos = torch.split(end_positions[:,:context_ids,:], 1,dim=1)
+
+    for stroke_i in range(context_ids, n_strokes):
+        input_pos = torch.cat(ar_start_pos[:stroke_i], dim=1)
+
+        if pred_end_positions:
+            end_pos = torch.cat(ar_end_pos[:stroke_i], dim=1)
+            input_pos = torch.cat([input_pos, end_pos], dim=-1)
+        
+        inp_num_strokes = torch.tensor([input_pos.size(1)])    
+
+        #position predictive model    
+        pos_pred_mu, pos_pred_sigma, pos_pred_pi = position_predictive_model(context_embeddings, inp_num_strokes, None)
+        pos_pred = position_predictive_model.draw_sample(pos_pred_mu, pos_pred_sigma, pos_pred_pi, greedy=False) 
+
+        #embedding predictive model
+        #TODO
+
+
+
+def qualititive_eval(batch_input, batch_target, device, enc_nhead, idx, std_channel, mean_channel, model):
+    '''
+    Qualititive eval
+    Args:
+        ....
+        idx: index to eval
+    '''
+    # parsing batch_inputs and targets
+    encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = eval_parse_input(batch_input, device)
+    target_ink, target_strok_len, target_pos, target_strokes, target_pen, target_num_strokes, target_end_coord = eval_parse_target(batch_target, device)
+
+    encoder, decoder, position_predictive_model, _ = model
+    # passing inputs to encoding
+    comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,device, enc_nhead)
+    encoder_out = encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
+    embedding = encoder_out.detach().clone()
+    embedding = embedding.unsqueeze(0)
+
+    prediction_position_ar(target_strokes, )
+
 
 def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_analysis = False, pred_analysis = False, include_diagram_loss = False):
     '''
@@ -63,7 +133,7 @@ def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_
     '''
     # parsing batch_inputs and targets
     encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = eval_parse_input(batch_input, device)
-    target_ink, target_strok_len, target_pos, target_strokes = eval_parse_target(batch_target, device)
+    target_ink, target_strok_len, target_pos, target_strokes, _, _, _ = eval_parse_target(batch_target, device)
     # passing inputs to encoding
     comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,device, cose.config.enc_nhead)
     encoder_out = cose.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
