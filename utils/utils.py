@@ -104,10 +104,3 @@ def chamfer_distance_np_var_len_normalized(arrays):
     dist_x_to_y = np.mean(min_x_to_y)
     return dist_y_to_x + dist_x_to_y#, dist_y_to_x, dist_x_to_y
   
-def get_min_max(values, offset_ratio=0.0):
-  min_ = values.min()
-  max_ = values.max()
-  offset_ = max(abs(min_), abs(max_))
-  min_ -= offset_ * offset_ratio
-  max_ += offset_ * offset_ratio
-  return (min_, max_)

@@ -43,7 +43,7 @@ class TransformerGMM(nn.Module):
         output = self.get_last_stroke(output, num_strokes)
         if tgt_cond is not None:
             output = torch.cat([output, tgt_cond], dim = 1)
-        output = self.dense2(output) 
+        output = self.dense2(output)
         output = self.dense3(output)
         output = self.relu(output)
         out_mu, out_sigma, out_pi = self.gmm(output)

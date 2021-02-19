@@ -68,9 +68,9 @@ class OutputModelGMMDense(nn.Module):
             comp_indexes = logits.max(dim = 1, keepdim = True)[1]
         #when not greedy: selects mus, and sigmas according to a categorial distribution with probabilities
         else:
-            probs_adjusted = adjust_temp(pi_pdf, temp)
+            probs_adjusted = adjust_temp(probs, temp)
             logits = torch.log1p(probs_adjusted)
-            comp_indexes = torch.multinominal(logits, 1).reshape(-1, seq_len) #multinomial distribution is categorical
+            comp_indexes = torch.multinomial(logits, 1).reshape(-1, seq_len) #multinomial distribution is categorical
         #selects components of mu and sigma according to indexes selected
         component_mu = torch.stack([mu[i,:,j.item(),:] for i, j in enumerate(comp_indexes.reshape(-1))], dim = 0).squeeze(dim = 1)
         component_sigma = torch.stack([sigma[i,:,j.item(),:] for i, j in enumerate(comp_indexes.reshape(-1))], dim = 0).squeeze(dim = 1)
