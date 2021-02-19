@@ -65,7 +65,7 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
         stroke_pred = np.concatenate([stroke_pred, np.zeros((stroke_pred.shape[0], 1))], axis = -1)
 
     # unnormalize
-    mean = np.concatenate([std_channel, np.array([0])])
+    mean = np.concatenate([mean_channel, np.array([0])])
     std = np.concatenate([std_channel, np.array([0])])
     drawing = drawing * std + mean
 

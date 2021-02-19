@@ -1,4 +1,5 @@
 from .relational import *
+from .utils import *
 from .encoder import *
 from .visualization import *
 from .eval import *
@@ -12,6 +13,7 @@ import numpy as np
 import random
 import os
 from torch.autograd import Variable
+
 
 def parse_arguments():
     ap = argparse.ArgumentParser()
