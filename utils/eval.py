@@ -99,7 +99,7 @@ def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_
         # nll loss
         nll_embedingg_loss = -1*gmm.logli_gmm_logsumexp(target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi)[:,0].detach().cpu().numpy()
         # saving loss
-        eval_loss["nll_embedding"] = nll_embedingg_loss
+        losses["nll_embedding"] = nll_embedingg_loss
         # decode all posible embeddings
         all_pred_strokes, all_pred_stroke_lens, all_emb_pi, all_emb_samples = decode_embedding_all_components([cose.embedding_predictive_model, cose.decoder],emb_pred_mu, emb_pred_sigma, emb_pred_pi, seq_len, cose.device, given_strokes)
         # retrieving important values
