@@ -50,9 +50,9 @@ def eval_parse_target(batch_target, device):
 
     return target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes
 
-def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead = 4, decoded_length = 50, draw = True):
-    #parsing models
-    position_predictive_model, embedding_predictive_model = models
+def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead, device ,decoded_length = 50, draw = True):
+    #parse models
+    position_predictive_model, embedding_predictive_model, decoder = models
     # inputs positions up unitl stroke_index
     input_pos = np.concatenate(ar_start_pos[:stroke_i], axis=1)
     
@@ -101,24 +101,25 @@ def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos
     return context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len
 
 
-def qualitative_eval_step(batch_input, batch_target, device, rel_nhead, std_channel, mean_channel, models):
+def qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, device, rel_nhead):
     '''
     Qualititive eval
     Args:
         ....
         idx: index to eval
     '''
+    # parsing models
+    position_predictive_model, embedding_predictive_model, decoder = models
     # parsing batch_inputs and targets
-    encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = eval_parse_input(batch_input, device)
-    target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes = eval_parse_target(batch_target, device)
-
-    comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,device, enc_nhead)
-    encoder_out = cose.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
+    encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = out_eval_parse_input
+    target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes = out_eval_parse_target
+    # parsing statistics variables
+    mean_channel, std_channel = stats_channels
 
     embedding = encoder_out.detach().clone()
     seq_len = target_strok_len.detach().clone()
 
-    target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, cose.device)
+    target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, device)
 
     all_strokes = np.concatenate(target_strokes_list)
 
@@ -134,7 +135,7 @@ def qualitative_eval_step(batch_input, batch_target, device, rel_nhead, std_chan
     ar_start_pos = np.split(start_positions[:, 0:context_ids], context_ids, axis=1)
 
     for stroke_i in range(context_ids, n_strokes):
-        context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = draw_pred_strokes_ar_step(stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead = rel_nhead, decoded_length = 50, draw = False)
+        context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead, device, decoded_length = 50, draw = False)
     
     return predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len
 
