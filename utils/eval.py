@@ -40,63 +40,68 @@ def eval_parse_target(batch_target, device):
     target_pos = batch_target["start_coord"].squeeze(dim =  0)
     target_end_coord = batch_target["end_coord"].squeeze(dim =  0)
     target_strokes = batch_target["stroke"].squeeze(dim = 0)
-    target_pen = batch_target["pen"].squeeze(dim=0)
-    target_num_strokes = batch_target["num_strokes"].item()
+    target_num_strokes = batch_target["num_strokes"].squeeze(dim = 0)
     #save to devices
     target_ink = target_ink.to(device)
     target_strok_len = target_strok_len.to(device)
     target_pos = target_pos.to(device)
     target_strokes = target_strokes.to(device)
-    target_pen = target_pen.to(device)
-    target_end_coord = target_end_coord.to(device)
+    target_num_strokes = target_num_strokes.to(device)
 
-    return target_ink, target_strok_len, target_pos, target_strokes, target_pen, target_num_strokes, target_end_coord
+    return target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes
 
+def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead = 4, decoded_length = 50, draw = True):
+    #parsing models
+    position_predictive_model, embedding_predictive_model = models
+    # inputs positions up unitl stroke_index
+    input_pos = np.concatenate(ar_start_pos[:stroke_i], axis=1)
+    
+    # define seq_len and n_strokes
+    n_strokes_ = context_embeddings.size(1)
+    seq_len = (torch.ones_like(context_embeddings[:, 0, 0])*n_strokes_).int()
+    
+    # inputs to position predictive model
+    pos_ar_inputs = torch.cat([context_embeddings, torch.tensor(input_pos).to(device)], dim = 2)
+    
+    # mask for position predictive model
+    seq_mask_rel = 1 - (torch.arange(seq_len.max().item()).to(device)[None, :] < seq_len[:, None]).float()
+    seq_mask_rel  = seq_mask_rel.masked_fill(seq_mask_rel == 1, float('-inf')).unsqueeze(dim=1).repeat(1,seq_mask_rel.shape[1],1).repeat_interleave(rel_nhead,dim = 0)
+    
+    # pass to position predictive model
+    pos_pred_mu, pos_pred_sigma, pos_pred_pi = position_predictive_model(pos_ar_inputs, seq_len, None, seq_mask_rel)
+    
+    # draw sample to position predictive model
+    out_pos_sample = position_predictive_model.draw_sample(pos_pred_mu, pos_pred_sigma, pos_pred_pi, greedy = False)
+    
+    # additional inputs to embedding predictive model
+    target_pos = out_pos_sample.detach().cpu().numpy()
+    
+    # pass to embedding predictive model with same masks
+    emb_pred_mu, emb_pred_sigma, emb_pred_pi = embedding_predictive_model(pos_ar_inputs, seq_len, torch.tensor(target_pos).to(device), src_mask  = seq_mask_rel)
+    
+    # draw sample to embedding predictive model
+    emb_pred = embedding_predictive_model.draw_sample(emb_pred_mu, emb_pred_sigma, emb_pred_pi, greedy = False)
+    
+    # add to already available embeddings and positions
+    context_embeddings = torch.cat([context_embeddings, emb_pred.unsqueeze(dim = 0)], dim  =1)
+    ar_start_pos.append(np.expand_dims(target_pos, axis = 0))
+    
+    # preparing to draw
+    emb_ = context_embeddings[0]
 
-def prediction_position_ar(target_strokes, target_pos, target_end_coord,seq_len, target_num_strokes, std_channel, mean_channel, embedding, device, position_predictive_model, pred_end_positions=False):
-    '''
-        Args:
-        embedding: output of encoder
-        ...
-    '''
-    target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, device)
-    all_strokes = torch.cat(target_strokes_list)
+    draw_seq_len = np.array([decoded_length]*(stroke_i + 1))
 
-    ## must changed to numpy, i dont think its gonna work with torch
-    x_min, x_max = get_min_max(all_strokes[:, 0], 0.3)
-    y_min, y_max = get_min_max(all_strokes[:, 1], 0.3)
-    v_min, v_max = None, None
+    predicted_batch_stroke = decode_sequence(decoder, emb_, draw_seq_len, device)
 
-    n_strokes = target_num_strokes + 5
-    context_ids = 2
+    predicted_batch_strat_pos = torch.tensor(np.transpose(np.concatenate(ar_start_pos[:stroke_i+1], axis=1), [1,0,2])).to(device)
 
-    context_embeddings = embedding[:, :context_ids, :]
-
-    start_positions = target_pos.permute(1,0,2)
-    end_positions = target_end_coord.permute(1,0,2)
-
-    ar_start_pos = torch.split(start_positions[:,:context_ids,:], 1,dim=1)
-    ar_end_pos = torch.split(end_positions[:,:context_ids,:], 1,dim=1)
-
-    for stroke_i in range(context_ids, n_strokes):
-        input_pos = torch.cat(ar_start_pos[:stroke_i], dim=1)
-
-        if pred_end_positions:
-            end_pos = torch.cat(ar_end_pos[:stroke_i], dim=1)
-            input_pos = torch.cat([input_pos, end_pos], dim=-1)
+    if draw:
+        npfig, fig, _, _ = transform_strokes_to_image(predicted_batch_stroke.detach().cpu(), draw_seq_len, predicted_batch_strat_pos.detach().cpu(), mean_channel, std_channel, num_strokes=predicted_batch_stroke.shape[0], stroke_pred=None, start_coord_pred=None, output_path = log_dir, output_file = 'noutput_pruebas',  save  = True, square_figure=True, alpha=0.5, highlight_start=True)
         
-        inp_num_strokes = torch.tensor([input_pos.size(1)])    
-
-        #position predictive model    
-        pos_pred_mu, pos_pred_sigma, pos_pred_pi = position_predictive_model(context_embeddings, inp_num_strokes, None)
-        pos_pred = position_predictive_model.draw_sample(pos_pred_mu, pos_pred_sigma, pos_pred_pi, greedy=False) 
-
-        #embedding predictive model
-        #TODO
+    return context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len
 
 
-
-def qualititive_eval(batch_input, batch_target, device, enc_nhead, idx, std_channel, mean_channel, model):
+def qualitative_eval_step(batch_input, batch_target, device, rel_nhead, std_channel, mean_channel, models):
     '''
     Qualititive eval
     Args:
@@ -105,19 +110,35 @@ def qualititive_eval(batch_input, batch_target, device, enc_nhead, idx, std_chan
     '''
     # parsing batch_inputs and targets
     encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = eval_parse_input(batch_input, device)
-    target_ink, target_strok_len, target_pos, target_strokes, target_pen, target_num_strokes, target_end_coord = eval_parse_target(batch_target, device)
+    target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes = eval_parse_target(batch_target, device)
 
-    encoder, decoder, position_predictive_model, _ = model
-    # passing inputs to encoding
     comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,device, enc_nhead)
-    encoder_out = encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
+    encoder_out = cose.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
+
     embedding = encoder_out.detach().clone()
-    embedding = embedding.unsqueeze(0)
+    seq_len = target_strok_len.detach().clone()
 
-    prediction_position_ar(target_strokes, )
+    target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, cose.device)
 
+    all_strokes = np.concatenate(target_strokes_list)
 
-def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_analysis = False, pred_analysis = False, include_diagram_loss = False):
+    embedding = embedding.reshape(num_strokes.size(0),-1, embedding.size(1))
+
+    # Auto-regressive prediction
+    n_strokes = target_num_strokes[0].item()
+    n_strokes += 5
+    context_ids = 2
+    context_embeddings = embedding[:, :context_ids]
+    start_positions = np.transpose(target_pos.detach().cpu().numpy(), [1, 0, 2])
+
+    ar_start_pos = np.split(start_positions[:, 0:context_ids], context_ids, axis=1)
+
+    for stroke_i in range(context_ids, n_strokes):
+        context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = draw_pred_strokes_ar_step(stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead = rel_nhead, decoded_length = 50, draw = False)
+    
+    return predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len
+
+def quantitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, eval_loss, device, rel_nhead ,recons_analysis = True, pred_analysis = True, include_diagram_loss = False):
     '''
     Evaluation step
     Args:
@@ -131,12 +152,16 @@ def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_
     Returns:
 
     '''
+    # parsing models
+    embedding_predictive_model, decoder = models
     # parsing batch_inputs and targets
-    encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = eval_parse_input(batch_input, device)
-    target_ink, target_strok_len, target_pos, target_strokes, _, _, _ = eval_parse_target(batch_target, device)
+    encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = out_eval_parse_input
+    target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes = out_eval_parse_target
+    # parsing statistics variables
+    mean_channel, std_channel = stats_channels
     # passing inputs to encoding
-    comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,device, cose.config.enc_nhead)
-    encoder_out = cose.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
+    # comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,device, enc_nhead)
+    # encoder_out = encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
     #losses saved in a dict and aggregated by eval_loss
     losses = dict()
 
@@ -144,12 +169,12 @@ def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_
         # decoding sequences
         embedding = encoder_out.detach().clone()
         seq_len = target_strok_len.detach().clone()
-        recon_stroke = decode_sequence(cose.decoder, embedding, seq_len, cose.device)
+        recon_stroke = decode_sequence(decoder, embedding, seq_len, device)
         # padded sequences to list of strokes
-        target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, cose.device)
-        recons_strokes_list = batch_to_real_stroke_list(recon_stroke, target_pos, seq_len, std_channel, mean_channel, cose.device)
+        target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, device)
+        recons_strokes_list = batch_to_real_stroke_list(recon_stroke, target_pos, seq_len, std_channel, mean_channel, device)
         # chamfer loss for reconstructed strokes
-        recon_chamfer = evaluate_chamfer(pred_strokes_list, target_pred_strokes_list)
+        recon_chamfer = evaluate_chamfer(recons_strokes_list, target_strokes_list)
         # saving loss for reconstructed strokes
         losses["rc_chamfer_stroke"]  = recon_chamfer
 
@@ -165,18 +190,18 @@ def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_
     if pred_analysis:
         # setting 
         given_strokes  = 2 #TODO: consider this config variable in json
-        emb_pred_mu, emb_pred_sigma, emb_pred_pi, pred_emb, target_emb = predict_embedding_ordered_batch(cose.embedding_predictive_model, cose.device, embedding, start_coord, given_strokes = given_strokes, rel_nhead = cose.config.rel_nhead)
+        emb_pred_mu, emb_pred_sigma, emb_pred_pi, pred_emb, target_emb = predict_embedding_ordered_batch(embedding_predictive_model, device, embedding, start_coord, given_strokes = given_strokes, rel_nhead = rel_nhead)
         # nll loss
-        nll_embedingg_loss = -1*gmm.logli_gmm_logsumexp(target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi)[:,0].detach().cpu().numpy()
+        nll_embedingg_loss = -1*logli_gmm_logsumexp(target_emb, emb_pred_mu, emb_pred_sigma, emb_pred_pi)[:,0].detach().cpu().numpy()
         # saving loss
         losses["nll_embedding"] = nll_embedingg_loss
         # decode all posible embeddings
-        all_pred_strokes, all_pred_stroke_lens, all_emb_pi, all_emb_samples = decode_embedding_all_components([cose.embedding_predictive_model, cose.decoder],emb_pred_mu, emb_pred_sigma, emb_pred_pi, seq_len, cose.device, given_strokes)
+        all_pred_strokes, all_pred_stroke_lens, all_emb_pi, all_emb_samples = decode_embedding_all_components([embedding_predictive_model, decoder],emb_pred_mu, emb_pred_sigma, emb_pred_pi, seq_len, device, given_strokes)
         # retrieving important values
         n_components = all_emb_pi.shape[1]
         all_target_pos = target_pos[given_strokes:].repeat(n_components,1,1)
         # padded sequences to list of strokes
-        pred_strokes_list = batch_to_real_stroke_list(all_pred_strokes, all_target_pos, all_pred_stroke_lens, std_channel, mean_channel, cose.device)
+        pred_strokes_list = batch_to_real_stroke_list(all_pred_strokes, all_target_pos, all_pred_stroke_lens, std_channel, mean_channel, device)
         target_pred_strokes_list = target_strokes_list[given_strokes:]*n_components
         # chamfer loss for predicted strokes
         results_pred = evaluate_chamfer(pred_strokes_list, target_pred_strokes_list)
@@ -191,10 +216,11 @@ def quantitative_eval_step(eval_loss, batch_input, batch_target, device, recons_
         # saving loss and best embeddings 
         #TODO there is an additional processing to order the embeddings in lowest error (On hold)
         losses["pred_chamfer_stroke"] =min_chamfer
-        selected_predicted_emb.extend(best_embeddings.numpy())
-    return eval_loss.add(losses), recon_chamfer, seq_len
+        
+    return eval_loss.add(losses), recon_chamfer, min_chamfer
 
-def get_reconstruction_metrics(expected_strokes, expected_start_coord, pred_embedding, recon_start_coord, strok_len_inputs, decoder, mean_channel, std_channel,device, skip_rows = 0):
+
+def _get_reconstruction_metrics(expected_strokes, expected_start_coord, pred_embedding, recon_start_coord, strok_len_inputs, decoder, mean_channel, std_channel,device, skip_rows = 0):
     loss_ae = 0
     mean_chamfer_dist = 0
     q = 0
@@ -226,7 +252,7 @@ def get_reconstruction_metrics(expected_strokes, expected_start_coord, pred_embe
     mean_chamfer_dist = total_chamfer_dist/q
     return loss_ae, mean_chamfer_dist, recons_strokes
 
-def get_prediction_metrics(encoder_inputs, strok_len_inputs, diagram_embedding, start_pos_base, num_strokes, models, device, mean_channel, std_channel, use_autoregressive = False):
+def _get_prediction_metrics(encoder_inputs, strok_len_inputs, diagram_embedding, start_pos_base, num_strokes, models, device, mean_channel, std_channel, use_autoregressive = False):
     decoder, position_predictive_model, embedding_predictive_model = models
     # Num_strokes_iniciales
     n_strokes_init = 2

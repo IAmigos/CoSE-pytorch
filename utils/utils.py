@@ -27,7 +27,8 @@ class AggregateAvg(object):
       else:
         self.container[key] = value + values[key]
     self.steps += 1
-
+    return self
+    
   def summary(self):
     summary_dict = dict()
     for key, value in self.container.items():
