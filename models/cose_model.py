@@ -33,7 +33,7 @@ class CoSEModel(nn.Module):
 
         self.config = configure_model(config_file, self.use_wandb)
 
-        self.device = torch.device("cuda:0" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:3" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
@@ -49,7 +49,7 @@ class CoSEModel(nn.Module):
                                                      std_channel=std_channel, num_strokes=num_strokes, output_path=self.config.diagrams_img_path, output_file=file_save_name, square_figure=True, save=True, alpha=0.6, highlight_start=True)
         return npfig, fig, ax, file_save_path
 
-    def test_strokes(self, valid_loader):
+    def test_strokes(self, test_loader):
 
         self.encoder.eval()
         self.decoder.eval()
@@ -73,7 +73,7 @@ class CoSEModel(nn.Module):
         
         batch_num = 0
 
-        for batch_input, batch_target in iter(valid_loader):
+        for batch_input, batch_target in iter(test_loader):
             #forward autoregressive
             out_eval_parse_input = eval_parse_input(batch_input, self.device)
             out_eval_parse_target = eval_parse_target(batch_target, self.device)
@@ -87,17 +87,18 @@ class CoSEModel(nn.Module):
                 # qualitative analysis
                 if batch_num in [6,1800,1900,2000,2300]:
                     predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_qual_eval, stats_tuple, self.device, self.config.rel_nhead, num_extra_pred = 5)
-            # obtain images
-            _, _, _, file_save_path = self.tranform2image(predicted_batch_stroke.detach().cpu(), draw_seq_len, predicted_batch_strat_pos.detach().cpu(), mean_channel, std_channel, predicted_batch_stroke.shape[0], file_save_name="diagrama_n_{}".format(i_diagram))
+                    # obtain images
+                    _, _, _, file_save_path = self.tranform2image(predicted_batch_stroke.detach().cpu(), draw_seq_len, predicted_batch_strat_pos.detach().cpu(), mean_channel, std_channel, predicted_batch_stroke.shape[0], file_save_name="diagrama_n_{}".format(batch_num))
+                    # append image files
+                    list_name_files.append(file_save_path)
             #obtain metrics
             metrics = eval_loss.summary_and_reset()
             # append metrics and 
-            list_recon_cd.append(metrics['rc_chamfer_stroke']) 
-            list_pred_cd.append(metrics['pred_chamfer_stroke'])
-            list_loss_eval_ae.append(metrics['nll_embedding'])
+            list_recon_cd.append(metrics[0]['rc_chamfer_stroke']) 
+            list_pred_cd.append(metrics[0]['pred_chamfer_stroke'])
+            list_loss_eval_ae.append(metrics[0]['nll_embedding'])
             list_loss_eval_pos.append(0) #list_loss_eval_pos.append(loss_eval_pos.item())
             list_loss_eval_emb.append(0) #list_loss_eval_emb.append(loss_eval_emb.item())
-            list_name_files.append(file_save_path)
             #update batch num
             batch_num+=1
 
@@ -318,6 +319,7 @@ class CoSEModel(nn.Module):
         
         train_loader = get_batch_iterator(self.config.train_dataset_path)
         valid_loader = get_batch_iterator(self.config.validation_dataset_path)
+        test_loader = get_batch_iterator(self.config.test_dataset_path, test = True)
 
         for epoch in tqdm(range(self.config.num_epochs)):
             loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
@@ -329,11 +331,9 @@ class CoSEModel(nn.Module):
             print('Epoch [{}/{}], Loss train position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_pos_pred.item()))
             print('Epoch [{}/{}], Loss train embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_emb_pred.item()))
             print('Epoch [{}/{}], Loss train total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_total.item()))
- 
-
 
             if self.use_wandb and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
-                recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(valid_loader)
+                recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(test_loader)
             
                 print('Epoch [{}/{}], Loss eval autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae))
                 print('Epoch [{}/{}], Loss eval position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_pos))

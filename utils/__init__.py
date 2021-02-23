@@ -53,6 +53,7 @@ def configure_model(config_file, use_wandb=False):
     config.save_path = config_file["general_config"]["save_path"]
     config.train_dataset_path = config_file["general_config"]["train_dataset_path"]
     config.validation_dataset_path = config_file["general_config"]["validation_dataset_path"]
+    config.test_dataset_path = config_file["general_config"]["test_dataset_path"]
     config.num_backups = config_file["general_config"]["num_backups"]
     config.model_path = config_file["general_config"]["model_path"]
     config.save_weights = config_file["general_config"]["save_weights"]
@@ -125,12 +126,18 @@ def parse_targets(batch_target, device):
     t_target_ink = batch_target['t_target_ink'].squeeze(dim=0)[:,:2].to(device)
     return t_target_ink
 
-def get_batch_iterator(path):
+def get_batch_iterator(path, test = False, batch_size = 64):
 
-    batchdata = BatchCoSELoader(path = path,
-                        filenames={"inputs_file" : "inputs_list_based_x64.pkl",
-                                    "targets_file": "target_list_based_x64.pkl"}
-                    )
+    if not test:
+        batchdata = BatchCoSELoader(path = path,
+                            filenames={"inputs_file" : f"inputs_list_based_x{batch_size}.pkl",
+                                        "targets_file": f"target_list_based_x{batch_size}.pkl"}
+                        )
+    else:
+        batchdata = BatchCoSELoader(path = path,
+                            filenames={"inputs_file" : "inputs_list_based.pkl",
+                                        "targets_file": "target_list_based.pkl"}
+                        )
 
     loader = DataLoader(dataset =batchdata,
                     batch_size = 1, #data is already in batch mode, batch_size = 1 means iterating every .get_next() returns a new batch
