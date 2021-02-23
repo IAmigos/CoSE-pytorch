@@ -4,6 +4,7 @@ from models import logli_gmm_logsumexp
 import numpy as np
 from .encoder import *
 from .utils import *
+import time
 
 def eval_parse_input(batch_input, device):
     '''
@@ -50,7 +51,7 @@ def eval_parse_target(batch_target, device):
 
     return target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes
 
-def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead, device ,decoded_length = 50, draw = True):
+def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead, device ,decoded_length = 50):
     #parse models
     position_predictive_model, embedding_predictive_model, decoder = models
     # inputs positions up unitl stroke_index
@@ -94,14 +95,11 @@ def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos
     predicted_batch_stroke = decode_sequence(decoder, emb_, draw_seq_len, device)
 
     predicted_batch_strat_pos = torch.tensor(np.transpose(np.concatenate(ar_start_pos[:stroke_i+1], axis=1), [1,0,2])).to(device)
-
-    if draw:
-        npfig, fig, _, _ = transform_strokes_to_image(predicted_batch_stroke.detach().cpu(), draw_seq_len, predicted_batch_strat_pos.detach().cpu(), mean_channel, std_channel, num_strokes=predicted_batch_stroke.shape[0], stroke_pred=None, start_coord_pred=None, output_path = log_dir, output_file = 'noutput_pruebas',  save  = True, square_figure=True, alpha=0.5, highlight_start=True)
-        
+ 
     return context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len
 
 
-def qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, device, rel_nhead):
+def qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, device, rel_nhead, num_extra_pred = 5):
     '''
     Qualititive eval
     Args:
@@ -127,7 +125,7 @@ def qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_targ
 
     # Auto-regressive prediction
     n_strokes = target_num_strokes[0].item()
-    n_strokes += 5
+    n_strokes += num_extra_pred
     context_ids = 2
     context_embeddings = embedding[:, :context_ids]
     start_positions = np.transpose(target_pos.detach().cpu().numpy(), [1, 0, 2])
@@ -135,7 +133,7 @@ def qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_targ
     ar_start_pos = np.split(start_positions[:, 0:context_ids], context_ids, axis=1)
 
     for stroke_i in range(context_ids, n_strokes):
-        context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead, device, decoded_length = 50, draw = False)
+        context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos, mean_channel, std_channel, rel_nhead, device, decoded_length = 50)
     
     return predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len
 

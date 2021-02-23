@@ -58,8 +58,11 @@ class CoSEModel(nn.Module):
 
 
         mean_channel, std_channel = get_stats(self.config.stats_path)
-        
-        num_batch = 0
+
+        eval_loss = AggregateAvg()
+        models_quant_eval = [self.embedding_predictive_model, self.decoder]
+        models_qual_eval = [self.position_predictive_model, self.embedding_predictive_model, self.decoder]
+        stats_tuple = [mean_channel, std_channel]
 
         list_name_files = []
         list_recon_cd = []
@@ -68,58 +71,35 @@ class CoSEModel(nn.Module):
         list_loss_eval_pos = []
         list_loss_eval_emb = []
         
-        for batch_input, batch_target in iter(valid_loader):
+        batch_num = 0
 
-            num_batch = num_batch + 1
-            encoder_inputs = batch_input['encoder_inputs'].squeeze(dim = 0).to(self.device)
-            num_strokes = batch_input['num_strokes'].squeeze(dim = 0).to(self.device)
-            strok_len_inputs = batch_input['seq_len'].squeeze(dim = 0).to(self.device)
-            start_coord = batch_input['start_coord'].squeeze(dim = 0).squeeze().to(self.device)
+        for batch_input, batch_target in iter(valid_loader):
             #forward autoregressive
+            out_eval_parse_input = eval_parse_input(batch_input, self.device)
+            out_eval_parse_target = eval_parse_target(batch_target, self.device)
+            encoder_inputs, _, strok_len_inputs, _, _ = out_eval_parse_input
             with torch.no_grad():
+                # passing inputs to encoding
                 comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device, self.config.enc_nhead)
                 encoder_out = self.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
-                diagram_embedding, padded_max_num_strokes, _, num_diagrams = reshape_stroke2diagram(encoder_out,num_strokes)
-                start_pos_base = start_coord.reshape(num_diagrams,padded_max_num_strokes,2)
-                #calculate recon_cd, pred_cd, diagram output
-                loss_eval_ae, recon_cd, _ = get_reconstruction_metrics(expected_strokes=encoder_inputs,
-                                                                       expected_start_coord=start_coord,
-                                                                       pred_embedding =encoder_out,
-                                                                       recon_start_coord=start_coord,
-                                                                       strok_len_inputs=strok_len_inputs,
-                                                                       decoder=self.decoder,
-                                                                       mean_channel = mean_channel,
-                                                                       std_channel=std_channel,
-                                                                       device = self.device)
-                
-                loss_eval_emb, loss_eval_pos, pred_cd, recons_strokes, recons_start_pos = get_prediction_metrics(encoder_inputs =encoder_inputs,
-                                                                                                                 strok_len_inputs = strok_len_inputs,
-                                                                                                                 diagram_embedding = diagram_embedding,
-                                                                                                                 start_pos_base = start_pos_base,
-                                                                                                                  num_strokes = num_strokes,
-                                                                                                                 models = [self.decoder, self.position_predictive_model, self.embedding_predictive_model],
-                                                                                                                 device = self.device,
-                                                                                                                 mean_channel = mean_channel,
-                                                                                                                 std_channel = std_channel,
-                                                                                                                 use_autoregressive = False)
-            
-            list_recon_cd.append(recon_cd.item()) 
-            list_pred_cd.append(pred_cd.item())
+                # quantitative analysis
+                eval_loss, recon_chamfer, pred_chamfer = quantitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_quant_eval, stats_tuple, eval_loss, self.device, self.config.rel_nhead)
+                # qualitative analysis
+                if batch_num in [6,1800,1900,2000,2300]:
+                    predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_qual_eval, stats_tuple, self.device, self.config.rel_nhead, num_extra_pred = 5)
+            # obtain images
+            _, _, _, file_save_path = self.tranform2image(predicted_batch_stroke.detach().cpu(), draw_seq_len, predicted_batch_strat_pos.detach().cpu(), mean_channel, std_channel, predicted_batch_stroke.shape[0], file_save_name="diagrama_n_{}".format(i_diagram))
+            #obtain metrics
+            metrics = eval_loss.summary_and_reset()
+            # append metrics and 
+            list_recon_cd.append(metrics['rc_chamfer_stroke']) 
+            list_pred_cd.append(metrics['pred_chamfer_stroke'])
             list_loss_eval_ae.append(loss_eval_ae.item())
             list_loss_eval_pos.append(loss_eval_pos.item())
             list_loss_eval_emb.append(loss_eval_emb.item())
-
-            if num_batch==1:
-                num_diagrams = len(recons_strokes)
-                #save image
-                for i_diagram in range(num_diagrams):
-                    recons_strokes_padded_i = torch.nn.utils.rnn.pad_sequence(recons_strokes[i_diagram], batch_first=True, padding_value=0.0).cpu().detach()
-                    seq_len_i = torch.tensor([len(i) for i in recons_strokes[i_diagram]]).cpu().detach()
-                    recons_start_pos_i = recons_start_pos[i_diagram].squeeze().cpu().detach()
-                    num_strokes_i = torch.tensor(len(recons_strokes[i_diagram])).cpu().detach()
-                    
-                    npfig, fig, _, file_save_path = self.tranform2image(recons_strokes_padded_i, seq_len_i, recons_start_pos_i, mean_channel, std_channel, num_strokes_i, file_save_name="diagrama_n_{}".format(i_diagram))
-                    list_name_files.append(file_save_path)
+            list_name_files.append(file_save_path)
+            #update batch num
+            batch_num+=1
 
         return (np.mean(list_recon_cd), np.mean(list_pred_cd), np.mean(list_loss_eval_ae),np.mean(list_loss_eval_pos), np.mean(list_loss_eval_emb), list_name_files)
 
