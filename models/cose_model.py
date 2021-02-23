@@ -94,9 +94,9 @@ class CoSEModel(nn.Module):
             # append metrics and 
             list_recon_cd.append(metrics['rc_chamfer_stroke']) 
             list_pred_cd.append(metrics['pred_chamfer_stroke'])
-            list_loss_eval_ae.append(loss_eval_ae.item())
-            list_loss_eval_pos.append(loss_eval_pos.item())
-            list_loss_eval_emb.append(loss_eval_emb.item())
+            list_loss_eval_ae.append(metrics['nll_embedding'])
+            list_loss_eval_pos.append(0) #list_loss_eval_pos.append(loss_eval_pos.item())
+            list_loss_eval_emb.append(0) #list_loss_eval_emb.append(loss_eval_emb.item())
             list_name_files.append(file_save_path)
             #update batch num
             batch_num+=1
@@ -359,8 +359,8 @@ class CoSEModel(nn.Module):
 
                 wandb.log({"train_epoch":epoch+1,
                             "loss_train_ae":loss_ae.item(),
-                            "loss_train_pos_pred":loss_pos_pred.item(),
-                            "loss_train_emb_pred":loss_emb_pred.item(), 
+                            #"loss_train_pos_pred":loss_pos_pred.item(),
+                            #"loss_train_emb_pred":loss_emb_pred.item(), 
                             "loss_train_total":loss_total.item(),
                             })
 

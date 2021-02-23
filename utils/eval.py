@@ -195,7 +195,7 @@ def quantitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_tar
         # saving loss
         losses["nll_embedding"] = nll_embedingg_loss
         # decode all posible embeddings
-        all_pred_strokes, all_pred_stroke_lens, all_emb_pi, all_emb_samples = decode_embedding_all_components([embedding_predictive_model, decoder],emb_pred_mu, emb_pred_sigma, emb_pred_pi, seq_len, device, given_strokes)
+        all_pred_strokes, all_pred_stroke_lens, all_emb_pi, all_emb_samples = decode_embedding_all_components([embedding_predictive_model, decoder], emb_pred_mu, emb_pred_sigma, emb_pred_pi, seq_len, device, given_strokes)
         # retrieving important values
         n_components = all_emb_pi.shape[1]
         all_target_pos = target_pos[given_strokes:].repeat(n_components,1,1)
