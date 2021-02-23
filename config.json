@@ -6,7 +6,7 @@
             "enc_nhead": 4,
             "enc_dff":128,
             "enc_n_layers":6,
-            "enc_dropout":0.1
+            "enc_dropout":0.2
         },
         "rnn":{
             "enc_hsize": 128,
@@ -19,7 +19,7 @@
         "rel_nhead":4,
         "rel_dff":256,
         "rel_n_layers":6,
-        "rel_dropout":0.05,
+        "rel_dropout":0.25,
         "rel_gmm_num_components":10
     },
     "dec_hparams":{
@@ -41,10 +41,10 @@
         "end_positions": false
     },
     "training_params":{
-        "input_type": "order",
+        "input_type": "hybrid",
         "replace_padding": false,
         "stop_predictive_grad": true,
-        "num_epochs":2,
+        "num_epochs":150,
         "lr_ae":1e-3,
         "lr_pos_pred":1e-3,
         "lr_emb_pred":1e-3
@@ -57,7 +57,7 @@
         "train_dataset_path":"/data/ajimenez/cose/train/",
         "validation_dataset_path":"/data/ajimenez/cose/valid/",
         "test_dataset_path": "/data/ajimenez/cose/test/",
-        "num_backups":2,
+        "num_backups":75,
         "model_path":"weights/",
         "save_weights":true,
         "stats_path": "/data/jcabrera/didi_wo_text/didi_wo_text-stats-origin_abs_pos.json"
