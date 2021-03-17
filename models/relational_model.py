@@ -25,6 +25,11 @@ class TransformerGMM(nn.Module):
         self.relu = nn.ReLU()
         self.gmm = OutputModelGMMDense(input_size=dff, out_units=out_units, num_components=num_components)
         
+        nn.init.kaiming_normal_(self.dense1.weight)
+        #nn.init.kaiming_normal_(self.transformer_decoder.weight)
+        nn.init.kaiming_normal_(self.dense2.weight)
+        nn.init.kaiming_normal_(self.dense3.weight)
+
     def get_last_stroke(self, tensor, num_strokes):
         
         embeddingd_lt = []

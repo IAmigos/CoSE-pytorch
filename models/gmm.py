@@ -31,6 +31,8 @@ class OutputModelGMMDense(nn.Module):
         self.component_size = out_units * num_components
         self.out_size = 2 * self.component_size + num_components
         self.layer_out = nn.Linear(input_size, self.out_size, bias=False)
+
+        nn.init.kaiming_normal_(self.layer_out.weight)
         
     def forward(self, inputs):
         out_ = self.layer_out(inputs)

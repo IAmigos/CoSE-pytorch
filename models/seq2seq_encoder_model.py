@@ -24,6 +24,9 @@ class EncoderRNN(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=False, bidirectional=True, dropout=dropout)
         self.fc1 = nn.Linear(hidden_size*2, encoder_dim)
 
+        nn.init.kaiming_normal_(self.fc1.weight)
+        nn.init.kaiming_normal_(self.lstm.weight)
+
     def get_last_time_step(self, tensor, stroke_lengths):
         
         embeddingd_lt = []
@@ -76,6 +79,10 @@ class DecoderRNN(nn.Module):
         self.fc2 = nn.Linear(t_input_size*output_size, dim_layer)
         self.gmm = OutputModelGMMDense(input_size= dim_layer, out_units= 2, num_components=num_components)
         
+        nn.init.kaiming_normal_(self.fc1.weight)
+        nn.init.kaiming_normal_(self.lstm2.weight)
+        nn.init.kaiming_normal_(self.fc2.weight)
+
         
     def forward(self, encoded_input):
         h0 = Variable(torch.randn(self.num_layers, encoded_input.size(0), self.output_size).to(self.device))

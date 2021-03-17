@@ -40,6 +40,10 @@ class Trans_encoder(nn.Module):
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         self.dense2 = nn.Linear(d_model, size_embedding)
 
+        nn.init.kaiming_normal_(self.dense1.weight)
+        #nn.init.kaiming_normal_(self.transformer_encoder.weight)
+        nn.init.kaiming_normal_(self.dense2.weight)
+
     def get_last_time_step(self, tensor, stroke_lengths):
         
         embeddingd_lt = []
