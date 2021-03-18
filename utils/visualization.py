@@ -2,7 +2,7 @@ import json
 import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-plt.switch_backend('agg')
+#plt.switch_backend('agg')
 import numpy as np
 import pickle
 # import tensorflow as tf
@@ -121,7 +121,6 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
         max_xysize = max(x_size, y_size)
         x_size, y_size = max_xysize, max_xysize
     fig, ax = plt.subplots(figsize=(x_size, y_size))
-
     plt.axis("tight")
     plt.axis('off')
     ax.set_xlim(x_borders)
@@ -170,6 +169,7 @@ def transform_strokes_to_image(drawing, seq_len_drawing, start_coord_drawing, me
 #             with open(save_path + ".svg", "w") as tf_save_path:
 #                 fig.savefig(tf_save_path, format='svg', dpi=300)
 #                 plt.close()
+    plt.close(fig)
     np_fig = fig2data(fig)
     return np_fig, fig, ax, save_path
 
