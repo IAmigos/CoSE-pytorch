@@ -1,4 +1,4 @@
-from chamferdist import ChamferDistance
+#from chamferdist import ChamferDistance
 import torch
 from models import logli_gmm_logsumexp
 import numpy as np

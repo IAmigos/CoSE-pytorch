@@ -20,22 +20,16 @@ import sys
 
 class CoSEModel(nn.Module):
     def __init__(self,
-            config_file,
+            config,
             use_wandb=True
         ):
         super(CoSEModel, self).__init__()
     
         self.use_wandb = use_wandb
+        self.config = config
 
-        if self.use_wandb:
-            wandb.init(project="CoSE_Pytorch")
-            wandb.watch_called = False
-
-        self.config = configure_model(config_file, self.use_wandb)
-
-        self.device = torch.device("cuda:3" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:" + (os.getenv('N_CUDA')if os.getenv('N_CUDA') else "0") if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
-
 
     def tranform2image(self, strokes, seq_len, start_coords, mean_channel, std_channel, num_strokes, file_save_name):
         
@@ -273,7 +267,7 @@ class CoSEModel(nn.Module):
 
         return (loss_ae, loss_pos_pred, loss_emb_pred, loss_total)
 
-def train_step_ae(self, train_loader, optimizers):
+    def train_step_ae(self, train_loader, optimizers):
 
         optimizer_ae, optimizer_pos_pred, optimizer_emb_pred = optimizers    
 
@@ -290,6 +284,11 @@ def train_step_ae(self, train_loader, optimizers):
             t_target_ink = parse_targets(batch_target,self.device)
             # Creating sequence length mask
             comb_mask , look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs, self.device, self.config.enc_nhead)
+            # Scaling input
+            x_ = enc_inputs[:,:,0]
+            y_ = enc_inputs[:,:,1]
+            enc_inputs[:,:,0] = (x_ - x_.min().item())/(x_.max().item() - x_.min().item())
+            enc_inputs[:,:,1] = (y_ - y_.min().item())/(y_.max().item() - y_.min().item())
             # Encoder forward
             encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, comb_mask)
             # decoder forward
@@ -299,12 +298,15 @@ def train_step_ae(self, train_loader, optimizers):
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
             ###
             loss_ae = -1*(logli_gmm_logsumexp(t_target_ink, ae_mu, ae_sigma, ae_pi)[t_target_ink.sum(dim=1) != 0].mean())
-            ###
+            #---------------------
             loss_ae.backward()
-            #
+            #---------------------
+            torch.nn.utils.clip_grad_norm_(self.encoder.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.decoder.parameters(), 1)
+            #--------------------
             optimizer_ae.step()
 
-        return (loss_ae)
+        return loss_ae
 
     def save_weights(self, path_gen, path_sub, use_wandb=True):
 
@@ -339,11 +341,14 @@ def train_step_ae(self, train_loader, optimizers):
             print("Training in CPU")
 
         if self.config.save_weights:
-            path_save_weights = self.config.root_path + self.config.save_path
-        try:
-            os.mkdir(path_save_weights)
-        except OSError:
-            pass
+            if self.use_wandb:
+                path_save_weights = self.config.root_path + wandb.run.id + "_" + self.config.save_path
+            else:
+                path_save_weights = self.config.root_path + self.config.save_path
+            try:
+                os.mkdir(path_save_weights)
+            except OSError:
+                pass
 
         #optimizer_ae, optimizer_pos_pred, optimizer_emb_pred 
         optimizers = self.init_optimizers()
@@ -354,7 +359,7 @@ def train_step_ae(self, train_loader, optimizers):
         test_loader = get_batch_iterator(self.config.test_dataset_path, test = True)
 
         for epoch in tqdm(range(self.config.num_epochs)):
-            loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
+            loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step_ae(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
         
 
