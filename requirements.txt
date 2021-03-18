@@ -1,8 +1,8 @@
 torch==1.7.1
 tfrecord
 numpy==1.19.4
-scikit-learn==0.19.1
+scikit-learn==0.24.1
 wandb==0.10.22
 tqdm==4.55.1
 helper==2.4.2
-chamferdist
+matplotlib==3.3.4
