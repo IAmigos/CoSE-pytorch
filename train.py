@@ -10,7 +10,7 @@ import wandb
 
 PROJECT_WANDB = "CoSE_Pytorch"
 
-def train(config_file, use_wandb=True, run_name, run_notes):
+def train(config_file, use_wandb, run_name, run_notes):
     set_seed(0)
     config = configure_model(config_file, use_wandb)
 

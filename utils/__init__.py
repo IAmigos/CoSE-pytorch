@@ -46,10 +46,6 @@ def configure_model(config_file, use_wandb=False):
 
     config_file = parse_configuration(config_file)
 
-    if config_file["ae_model_type"] not in ("transformer", "rnn"):
-        raise ValueError("specified ae_model_type does not exist, please change config in config.json 'ae_model_type'")
-
-
     config = dict(
         use_gpu=config_file["general_config"]["use_gpu"],
         root_path=config_file["general_config"]["root_path"],
@@ -65,29 +61,6 @@ def configure_model(config_file, use_wandb=False):
 
         #autoencoder model type
         ae_model_type=config_file["ae_model_type"],
-
-        #transformer
-        #encoder config
-        enc_d_model=config_file['enc_hparams']["transformer"]["enc_d_model"],
-        enc_nhead=config_file['enc_hparams']["transformer"]["enc_nhead"],
-        enc_dff=config_file['enc_hparams']["transformer"]["enc_dff"],
-        enc_n_layers=config_file['enc_hparams']["transformer"]["enc_n_layers"],
-        enc_dropout=config_file['enc_hparams']["transformer"]["enc_dropout"],
-        #decoder config    
-        dec_gmm_num_components=config_file["dec_hparams"]["transformer"]["dec_gmm_num_components"],
-        dec_layer_features=config_file["dec_hparams"]["transformer"]["dec_layer_features"],
-
-        #rnn
-        #encoder config
-        enc_hsize=config_file["enc_hparams"]["rnn"]["enc_hsize"],
-        enc_n_layers=config_file["enc_hparams"]["rnn"]["enc_n_layers"],
-        enc_dropout=config_file["enc_hparams"]["rnn"]["enc_dropout"],
-        #decoder config 
-        dec_hsize=config_file["dec_hparams"]["rnn"]["dec_hsize"],
-        dec_n_layers=config_file["dec_hparams"]["rnn"]["dec_n_layers"],
-        dec_dim_layer=config_file["dec_hparams"]["rnn"]["dec_dim_layer"],
-        dec_dropout=config_file["dec_hparams"]["rnn"]["dec_dropout"],
-        dec_gmm_num_components=config_file["dec_hparams"]["rnn"]["dec_gmm_num_components"],
 
         #relational config
         rel_d_model=config_file["rel_hparams"]["rel_d_model"],
@@ -111,6 +84,35 @@ def configure_model(config_file, use_wandb=False):
         lr_pos_pred=config_file["training_params"]["lr_pos_pred"],
         lr_emb_pred=config_file["training_params"]["lr_emb_pred"]
     )
+
+    #transformer
+    if config_file["ae_model_type"] == "transformer":
+        #encoder config
+        config["enc_d_model"] = config_file['enc_hparams']["transformer"]["enc_d_model"]
+        config["enc_nhead"] = config_file['enc_hparams']["transformer"]["enc_nhead"]
+        config["enc_dff"] = config_file['enc_hparams']["transformer"]["enc_dff"]
+        config["enc_n_layers"] = config_file['enc_hparams']["transformer"]["enc_n_layers"]
+        config["enc_dropout"] = config_file['enc_hparams']["transformer"]["enc_dropout"]
+        #decoder config
+        config["dec_gmm_num_components"] = config_file["dec_hparams"]["transformer"]["dec_gmm_num_components"]
+        config["dec_layer_features"] = config_file["dec_hparams"]["transformer"]["dec_layer_features"]
+    
+    #rnn    
+    elif config_file["ae_model_type"] == "rnn":
+        #encoder config
+        config["enc_hsize"] = config_file["enc_hparams"]["rnn"]["enc_hsize"]
+        config["enc_n_layers"] = config_file["enc_hparams"]["rnn"]["enc_n_layers"]
+        config["enc_dropout"] = config_file["enc_hparams"]["rnn"]["enc_dropout"]
+        #decoder config
+        config["dec_hsize"] = config_file["dec_hparams"]["rnn"]["dec_hsize"]
+        config["dec_n_layers"] = config_file["dec_hparams"]["rnn"]["dec_n_layers"]
+        config["dec_dim_layer"] = config_file["dec_hparams"]["rnn"]["dec_dim_layer"]
+        config["dec_dropout"] = config_file["dec_hparams"]["rnn"]["dec_dropout"]
+        config["dec_gmm_num_components"] = config_file["dec_hparams"]["rnn"]["dec_gmm_num_components"]
+    
+    else:
+        raise ValueError("specified ae_model_type does not exist, please change config in config.json 'ae_model_type'")
+
 
     if not use_wandb:
         config = type("configuration", (object,), config)
