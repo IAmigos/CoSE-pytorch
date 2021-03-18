@@ -23,7 +23,7 @@ class Trans_decoder(nn.Module):
         )
         self.gmm = OutputModelGMMDense(input_size= layer_features[-1], out_units= 2, num_components= num_components) # 2 units for (x,y)
 
-        self.dense_layers.apply(lambda m: nn.init.kaiming_normal_(m.weight))
+        #self.dense_layers.apply(lambda m: nn.init.kaiming_normal_(m.weight))
 
 
     def forward(self, x):
