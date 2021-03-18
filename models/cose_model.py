@@ -20,20 +20,15 @@ import sys
 
 class CoSEModel(nn.Module):
     def __init__(self,
-            config_file,
+            config,
             use_wandb=True
         ):
         super(CoSEModel, self).__init__()
     
         self.use_wandb = use_wandb
+        self.config = config
 
-        if self.use_wandb:
-            wandb.init(project="CoSE_Pytorch")
-            wandb.watch_called = False
-
-        self.config = configure_model(config_file, self.use_wandb)
-
-        self.device = torch.device("cuda:3" if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:" + (os.getenv('N_CUDA')if os.getenv('N_CUDA') else "0") if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 
@@ -307,11 +302,15 @@ class CoSEModel(nn.Module):
             print("Training in CPU")
 
         if self.config.save_weights:
-            path_save_weights = self.config.root_path + self.config.save_path
-        try:
-            os.mkdir(path_save_weights)
-        except OSError:
-            pass
+            if self.use_wandb:
+                path_save_weights = self.config.root_path + wandb.run.id + "_" + self.config.save_path
+            else:
+                path_save_weights = self.config.root_path + self.config.save_path
+            try:
+                os.mkdir(path_save_weights)
+            except OSError:
+                pass
+
 
         #optimizer_ae, optimizer_pos_pred, optimizer_emb_pred 
         optimizers = self.init_optimizers()
