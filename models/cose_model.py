@@ -69,32 +69,33 @@ class CoSEModel(nn.Module):
         batch_num = 0
 
         for batch_input, batch_target in iter(test_loader):
-            #forward autoregressive
-            out_eval_parse_input = eval_parse_input(batch_input, self.device)
-            out_eval_parse_target = eval_parse_target(batch_target, self.device)
-            encoder_inputs, _, strok_len_inputs, _, _ = out_eval_parse_input
-            with torch.no_grad():
-                # passing inputs to encoding
-                comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device, self.config.enc_nhead)
-                encoder_out = self.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
-                # quantitative analysis
-                eval_loss, recon_chamfer, pred_chamfer = quantitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_quant_eval, stats_tuple, eval_loss, self.device, self.config.rel_nhead)
-                # qualitative analysis
-                if batch_num in [6,1800,1900,2000,2300]:
+            if batch_num in [6,1800,1900,2000,2300]:
+                #forward autoregressive
+                out_eval_parse_input = eval_parse_input(batch_input, self.device)
+                out_eval_parse_target = eval_parse_target(batch_target, self.device)
+                encoder_inputs, _, strok_len_inputs, _, _ = out_eval_parse_input
+                with torch.no_grad():
+                    # passing inputs to encoding
+                    comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device, self.config.enc_nhead)
+                    encoder_out = self.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
+                    # quantitative analysis
+                    eval_loss, recon_chamfer, pred_chamfer = quantitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_quant_eval, stats_tuple, eval_loss, self.device, self.config.rel_nhead)
+                    # qualitative analysis
+                    
                     predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_qual_eval, stats_tuple, self.device, self.config.rel_nhead, num_extra_pred = 5)
                     # obtain images
                     _, _, _, file_save_path = self.tranform2image(predicted_batch_stroke.detach().cpu(), draw_seq_len, predicted_batch_strat_pos.detach().cpu(), mean_channel, std_channel, predicted_batch_stroke.shape[0], file_save_name="diagrama_n_{}".format(batch_num))
                     # append image files
                     list_name_files.append(file_save_path)
-            #obtain metrics
-            metrics = eval_loss.summary_and_reset()
-            # append metrics and 
-            list_recon_cd.append(metrics[0]['rc_chamfer_stroke']) 
-            list_pred_cd.append(metrics[0]['pred_chamfer_stroke'])
-            list_loss_eval_ae.append(metrics[0]['nll_embedding'])
-            list_loss_eval_pos.append(0) #list_loss_eval_pos.append(loss_eval_pos.item())
-            list_loss_eval_emb.append(0) #list_loss_eval_emb.append(loss_eval_emb.item())
-            #update batch num
+                #obtain metrics
+                metrics = eval_loss.summary_and_reset()
+                # append metrics and 
+                list_recon_cd.append(metrics[0]['rc_chamfer_stroke']) 
+                list_pred_cd.append(metrics[0]['pred_chamfer_stroke'])
+                list_loss_eval_ae.append(metrics[0]['nll_embedding'])
+                list_loss_eval_pos.append(0) #list_loss_eval_pos.append(loss_eval_pos.item())
+                list_loss_eval_emb.append(0) #list_loss_eval_emb.append(loss_eval_emb.item())
+                #update batch num
             batch_num+=1
 
         return (np.mean(list_recon_cd), np.mean(list_pred_cd), np.mean(list_loss_eval_ae),np.mean(list_loss_eval_pos), np.mean(list_loss_eval_emb), list_name_files)

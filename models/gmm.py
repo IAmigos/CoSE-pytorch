@@ -41,7 +41,7 @@ class OutputModelGMMDense(nn.Module):
             out_, [self.component_size, self.component_size, self.num_components],dim=1) # (self.component_size, self.component_size, self.num_components)
         #out_dict["mu"] = out_mu 
         out_sigma = torch.exp(out_sigma)
-        out_pi = torch.nn.functional.softmax(out_pi, dim = 0)
+        out_pi = torch.nn.functional.softmax(out_pi, dim = 1)
         return out_mu, out_sigma, out_pi
 
     def draw_sample(self, out_mu, out_sigma, out_pi, greedy:bool=False, greedy_mu:bool=True, temp:float =0.5):
