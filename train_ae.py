@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from data.loaders import *
-from models import *
+from models.cose_model_ae import * 
 import json
 import os
 from utils import set_seed, configure_model, parse_arguments

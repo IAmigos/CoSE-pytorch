@@ -89,8 +89,8 @@ class CoSEModel(nn.Module):
                 metrics = eval_loss.summary_and_reset()
                 # append metrics and 
                 list_recon_cd.append(metrics[0]['rc_chamfer_stroke']) 
-                list_pred_cd.append(metrics[0]['pred_chamfer_stroke'])
-                list_loss_eval_ae.append(metrics[0]['nll_embedding'])
+                list_pred_cd.append(0)
+                list_loss_eval_ae.append(0)
                 list_loss_eval_pos.append(0) #list_loss_eval_pos.append(loss_eval_pos.item())
                 list_loss_eval_emb.append(0) #list_loss_eval_emb.append(loss_eval_emb.item())
                 #update batch num
@@ -276,8 +276,6 @@ class CoSEModel(nn.Module):
 
         for batch_input, batch_target in iter(train_loader):
 
-            optimizer_pos_pred.zero_grad()
-            optimizer_emb_pred.zero_grad()
             optimizer_ae.zero_grad()   
             # Parsing inputs
             enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input,self.device)
@@ -306,7 +304,7 @@ class CoSEModel(nn.Module):
             #--------------------
             optimizer_ae.step()
 
-        return loss_ae
+        return loss_ae, torch.tensor(0), torch.tensor(0), loss_ae
 
     def save_weights(self, path_gen, path_sub, use_wandb=True):
 
