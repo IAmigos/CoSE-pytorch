@@ -98,6 +98,90 @@ def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos
  
     return context_embeddings, ar_start_pos, predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len
 
+def quantitative_ae_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, eval_loss, device, rel_nhead ,recons_analysis = True, pred_analysis = True, include_diagram_loss = False):
+    '''
+    Evaluation step
+    Args:
+        eval_loss (AggregatedAvg)
+        batch_input (Tensor)
+        batch_target (Tensor)
+        device (str)
+        recons_analysis (bool): whether to perform reconstruction analysis
+        pred_analysis (bool): whether to perform predictive analysis
+        include_diagram_loss (bool): whether to include diagram loss for the reconstruction analysis
+    Returns:
+
+    '''
+    # parsing models
+    embedding_predictive_model, decoder = models
+    # parsing batch_inputs and targets
+    encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = out_eval_parse_input
+    target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes = out_eval_parse_target
+    # parsing statistics variables
+    mean_channel, std_channel = stats_channels
+    # passing inputs to encoding
+    # comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,device, enc_nhead)
+    # encoder_out = encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
+    #losses saved in a dict and aggregated by eval_loss
+    losses = dict()
+
+    if recons_analysis:
+        # decoding sequences
+        embedding = encoder_out.detach().clone()
+        seq_len = target_strok_len.detach().clone()
+        recon_stroke = decode_sequence(decoder, embedding, seq_len, device)
+        # padded sequences to list of strokes
+        target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, device)
+        recons_strokes_list = batch_to_real_stroke_list(recon_stroke, target_pos, seq_len, std_channel, mean_channel, device)
+        # chamfer loss for reconstructed strokes
+        recon_chamfer = evaluate_chamfer(recons_strokes_list, target_strokes_list)
+        # saving loss for reconstructed strokes
+        losses["rc_chamfer_stroke"]  = recon_chamfer
+
+        if include_diagram_loss:
+            # diagram level arrays
+            target_diagram = np.vstack(gt_strokes)
+            recons_diagram = np.vstack(recon_strokes)
+            # chamfer loss for diagram
+            recon_diag_chamfer = evaluate_chamfer(target_diagram, recons_diagram)
+            # saving loss for diagram
+            losses["rc_chamfer_diagram"] = recon_diag_chamfer
+
+    return eval_loss.add(losses), recon_chamfer
+
+def qualitative_ae_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, device, rel_nhead, num_extra_pred = 5):
+    '''
+    Qualititive eval
+    Args:
+        ....
+        idx: index to eval
+    '''
+    # parsing models
+    position_predictive_model, embedding_predictive_model, decoder = models
+    # parsing batch_inputs and targets
+    encoder_inputs, num_strokes, strok_len_inputs, start_coord, end_coord = out_eval_parse_input
+    target_ink, target_strok_len, target_pos, target_strokes, target_num_strokes = out_eval_parse_target
+    # parsing statistics variables
+    mean_channel, std_channel = stats_channels
+
+    embedding = encoder_out.detach().clone()
+    seq_len = target_strok_len.detach().clone()
+
+    target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, device)
+
+    all_strokes = np.concatenate(target_strokes_list)
+
+    embedding = embedding.reshape(num_strokes.size(0),-1, embedding.size(1))
+
+    emb_ = context_embeddings[0]
+
+    draw_seq_len = np.array([50]*(emb_.size(0)))
+
+    predicted_batch_stroke = decode_sequence(decoder, emb_, draw_seq_len, device)
+
+    return predicted_batch_stroke, target_pos, draw_seq_len
+
+
 
 def qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, device, rel_nhead, num_extra_pred = 5):
     '''

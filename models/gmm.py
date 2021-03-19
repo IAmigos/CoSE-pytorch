@@ -30,7 +30,7 @@ class OutputModelGMMDense(nn.Module):
         # out_size = (mu, sigma) * num_components + num_components ( para K)
         self.component_size = out_units * num_components
         self.out_size = 2 * self.component_size + num_components
-        self.layer_out = nn.Linear(input_size, self.out_size)# bias = False
+        self.layer_out = nn.Linear(input_size, self.out_size)# 
 
         nn.init.kaiming_normal_(self.layer_out.weight)
         
