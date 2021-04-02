@@ -86,7 +86,9 @@ class CoSEModel(nn.Module):
                     # append image files
                     list_name_files.append(file_save_path)
                 #obtain metrics
+                print(eval_loss)
                 metrics = eval_loss.summary_and_reset()
+                print(metrics)
                 # append metrics and 
                 list_recon_cd.append(metrics[0]['rc_chamfer_stroke']) 
                 list_pred_cd.append(0)
@@ -97,7 +99,6 @@ class CoSEModel(nn.Module):
             batch_num+=1
 
         return (np.mean(list_recon_cd), np.mean(list_pred_cd), np.mean(list_loss_eval_ae),np.mean(list_loss_eval_pos), np.mean(list_loss_eval_emb), list_name_files)
-
 
 
     def forward(self, diagrama):
@@ -282,11 +283,11 @@ class CoSEModel(nn.Module):
             t_target_ink = parse_targets(batch_target,self.device)
             # Creating sequence length mask
             comb_mask , look_ahead_mask, _ = generate_3d_mask(enc_inputs, stroke_len_inputs, self.device, self.config.enc_nhead)
-            # Scaling input
-            x_ = enc_inputs[:,:,0]
-            y_ = enc_inputs[:,:,1]
-            enc_inputs[:,:,0] = (x_ - x_.min().item())/(x_.max().item() - x_.min().item())
-            enc_inputs[:,:,1] = (y_ - y_.min().item())/(y_.max().item() - y_.min().item())
+            # # Scaling input
+            # x_ = enc_inputs[:,:,0]
+            # y_ = enc_inputs[:,:,1]
+            # enc_inputs[:,:,0] = (x_ - x_.min().item())/(x_.max().item() - x_.min().item())
+            # enc_inputs[:,:,1] = (y_ - y_.min().item())/(y_.max().item() - y_.min().item())
             # Encoder forward
             encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, comb_mask)
             # decoder forward
@@ -367,14 +368,20 @@ class CoSEModel(nn.Module):
             print('Epoch [{}/{}], Loss train embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_emb_pred.item()))
             print('Epoch [{}/{}], Loss train total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_total.item()))
 
+            # recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(test_loader)
+            # print('Epoch [{}/{}], Loss eval autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae))
+            # print('Epoch [{}/{}], Loss eval position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_pos))
+            # print('Epoch [{}/{}], Loss eval embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_emb))
+            # print('Epoch [{}/{}], Loss eval total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae+loss_eval_pos+loss_eval_emb))
+           
             if self.use_wandb and ((epoch+1)% int(self.config.num_epochs/self.config.num_backups))==0:
                 recon_cd, pred_cd, loss_eval_ae, loss_eval_pos, loss_eval_emb, list_name_files = self.test_strokes(test_loader)
-            
+                
+                print('Epoch [{}/{}], Renconstruction Chamfer Distance: {:.4f}'.format(epoch+1, self.config.num_epochs, recon_cd))
                 print('Epoch [{}/{}], Loss eval autoencoder: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae))
                 print('Epoch [{}/{}], Loss eval position prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_pos))
                 print('Epoch [{}/{}], Loss eval embedding prediction: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_emb))
                 print('Epoch [{}/{}], Loss eval total: {:.4f}'.format(epoch+1, self.config.num_epochs, loss_eval_ae+loss_eval_pos+loss_eval_emb))
- 
 
                 wandb.log({"train_epoch":epoch+1,
                             "Generated strokes": [wandb.Image(img) for img in list_name_files],

@@ -44,7 +44,7 @@
         "input_type": "hybrid",
         "replace_padding": false,
         "stop_predictive_grad": true,
-        "num_epochs":2,
+        "num_epochs":200,
         "lr_ae":1e-3,
         "lr_pos_pred":1e-3,
         "lr_emb_pred":1e-3
@@ -57,7 +57,7 @@
         "train_dataset_path":"/data/ajimenez/cose/train/",
         "validation_dataset_path":"/data/ajimenez/cose/valid/",
         "test_dataset_path": "/data/ajimenez/cose/test/",
-        "num_backups":2,
+        "num_backups":50,
         "model_path":"weights/",
         "save_weights":true,
         "stats_path": "/data/jcabrera/didi_wo_text/didi_wo_text-stats-origin_abs_pos.json"

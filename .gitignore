@@ -151,6 +151,7 @@ pesos_descargados/
 *.save
 *.out
 #user files
+*_weights_trained
 Alex_eval_*
 Alex_eval_raw*
 Alex_pruebas*

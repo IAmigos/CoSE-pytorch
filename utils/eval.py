@@ -167,20 +167,17 @@ def qualitative_ae_step(encoder_out, out_eval_parse_input, out_eval_parse_target
     embedding = encoder_out.detach().clone()
     seq_len = target_strok_len.detach().clone()
 
-    target_strokes_list = batch_to_real_stroke_list(target_strokes, target_pos, seq_len, std_channel, mean_channel, device)
-
-    all_strokes = np.concatenate(target_strokes_list)
-
     embedding = embedding.reshape(num_strokes.size(0),-1, embedding.size(1))
 
-    emb_ = context_embeddings[0]
+    emb_ = embedding[0][:num_strokes[0]]
+
+    print(emb_.shape)
 
     draw_seq_len = np.array([50]*(emb_.size(0)))
 
     predicted_batch_stroke = decode_sequence(decoder, emb_, draw_seq_len, device)
 
     return predicted_batch_stroke, target_pos, draw_seq_len
-
 
 
 def qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models, stats_channels, device, rel_nhead, num_extra_pred = 5):
