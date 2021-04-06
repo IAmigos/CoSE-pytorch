@@ -194,16 +194,13 @@ class CoSEModel(nn.Module):
         self.decoder.train()
         self.embedding_predictive_model.train()
         self.position_predictive_model.train()
-
-        i=0
         
         for batch_input, batch_target in iter(train_loader):
 
             optimizer_pos_pred.zero_grad()
             optimizer_emb_pred.zero_grad()
             optimizer_ae.zero_grad()
-            if i < 3:
-                pass            
+
             # Parsing inputs
             enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input,self.device)
             t_target_ink = parse_targets(batch_target,self.device)
@@ -212,7 +209,7 @@ class CoSEModel(nn.Module):
             # Encoder forward
             encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, comb_mask)
             # decoder forward
-            encoder_out_reshaped = encoder_out.unsqueeze(dim=1).repeat(1,t_inputs.shape[1],1).reshape(-1, encoder_out.shape[-1])
+            encode r_out_reshaped = encoder_out.unsqueeze(dim=1).repeat(1,t_inputs.shape[1],1).reshape(-1, encoder_out.shape[-1])
             t_inputs_reshaped = t_inputs.reshape(-1,1)
             decoder_inp = torch.cat([encoder_out_reshaped, t_inputs_reshaped], dim = 1)
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
@@ -261,7 +258,12 @@ class CoSEModel(nn.Module):
             #
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
             loss_total.backward()
-
+            # gradient clipping
+            torch.nn.utils.clip_grad_norm_(self.encoder.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.decoder.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.embedding_predictive_model.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.position_predictive_model.parameters(), 1)
+            # ---
             optimizer_pos_pred.step()
             optimizer_emb_pred.step()
             optimizer_ae.step()
