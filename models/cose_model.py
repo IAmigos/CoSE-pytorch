@@ -195,15 +195,11 @@ class CoSEModel(nn.Module):
         self.embedding_predictive_model.train()
         self.position_predictive_model.train()
 
-        i=0
-        
         for batch_input, batch_target in iter(train_loader):
 
             optimizer_pos_pred.zero_grad()
             optimizer_emb_pred.zero_grad()
-            optimizer_ae.zero_grad()
-            if i < 3:
-                pass            
+            optimizer_ae.zero_grad()         
             # Parsing inputs
             enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input,self.device)
             t_target_ink = parse_targets(batch_target,self.device)
@@ -241,7 +237,6 @@ class CoSEModel(nn.Module):
                 sampled_target_emb = sampled_target_emb.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
             # Concatenating inputs for relational model
             #print("batch_pass")
-            i+=1
             pos_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos], dim = 2)
             ## pred_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos, sampled_target_start_pos.unsqueeze(dim = 1).repeat(1, sampled_input_start_pos.shape[1], 1)], dim = 2)
             tgt_cond = sampled_target_start_pos.squeeze(dim = 1)
@@ -261,7 +256,12 @@ class CoSEModel(nn.Module):
             #
             loss_total = loss_pos_pred + loss_emb_pred + loss_ae
             loss_total.backward()
-
+            #gradient clipping
+            torch.nn.utils.clip_grad_norm_(self.encoder.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.decoder.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.embedding_predictive_model.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.position_predictive_model.parameters(), 1)
+            #---
             optimizer_pos_pred.step()
             optimizer_emb_pred.step()
             optimizer_ae.step()

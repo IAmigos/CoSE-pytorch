@@ -129,5 +129,5 @@ def get_ordered_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_st
     input_range = torch.arange(start=0, end = padded_max_num_strokes).repeat(num_diagrams,1).to(device)    
     mask = ((input_range)< target_indexes) & ((input_range)>= start_index)
     input_indexes = input_range.masked_select(mask).reshape(num_diagrams, n_inputs)
-    assert (input_indexes==target_indexes.unsqueeze(dim=1).repeat(1,input_indexes.size(1))).sum() == 0
-    return input_indexes, target_indexes, n_inputsX|    
+    assert (input_indexes==target_indexes.repeat(1,input_indexes.size(1))).sum() == 0
+    return input_indexes, target_indexes, n_inputs

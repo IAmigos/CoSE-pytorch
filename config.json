@@ -19,7 +19,7 @@
         "rel_nhead":4,
         "rel_dff":256,
         "rel_n_layers":6,
-        "rel_dropout":0.25,
+        "rel_dropout":0.2,
         "rel_gmm_num_components":10
     },
     "dec_hparams":{
@@ -43,7 +43,7 @@
     "training_params":{
         "input_type": "hybrid",
         "replace_padding": false,
-        "stop_predictive_grad": true,
+        "stop_predictive_grad": true,   
         "num_epochs":200,
         "lr_ae":1e-3,
         "lr_pos_pred":1e-3,

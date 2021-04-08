@@ -200,7 +200,6 @@ class CoSEModel(nn.Module):
             optimizer_pos_pred.zero_grad()
             optimizer_emb_pred.zero_grad()
             optimizer_ae.zero_grad()
-
             # Parsing inputs
             enc_inputs, t_inputs, stroke_len_inputs, inputs_start_coord, inputs_end_coord, num_strokes_x_diagram_tensor = parse_inputs(batch_input,self.device)
             t_target_ink = parse_targets(batch_target,self.device)
