@@ -21,14 +21,13 @@ import sys
 class CoSEModel(nn.Module):
     def __init__(self,
             config,
-            use_wandb=True
+            use_wandb=True,
         ):
         super(CoSEModel, self).__init__()
     
         self.use_wandb = use_wandb
         self.config = config
-
-        self.device = torch.device("cuda:" + (os.getenv('N_CUDA')if os.getenv('N_CUDA') else "0") if self.config.use_gpu and torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:" + (os.getenv('N_CUDA')if os.getenv('N_CUDA') else "2") if self.config.use_gpu and torch.cuda.is_available() else "cpu")
         self.encoder, self.decoder, self.position_predictive_model ,self.embedding_predictive_model = self.init_model(self.device, self.config, self.use_wandb)
 
 

@@ -209,7 +209,7 @@ class CoSEModel(nn.Module):
             # Encoder forward
             encoder_out = self.encoder(enc_inputs.permute(1,0,2), stroke_len_inputs, comb_mask)
             # decoder forward
-            encode r_out_reshaped = encoder_out.unsqueeze(dim=1).repeat(1,t_inputs.shape[1],1).reshape(-1, encoder_out.shape[-1])
+            encoder_out_reshaped = encoder_out.unsqueeze(dim=1).repeat(1,t_inputs.shape[1],1).reshape(-1, encoder_out.shape[-1])
             t_inputs_reshaped = t_inputs.reshape(-1,1)
             decoder_inp = torch.cat([encoder_out_reshaped, t_inputs_reshaped], dim = 1)
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
@@ -237,8 +237,6 @@ class CoSEModel(nn.Module):
                 sampled_target_start_pos = sampled_target_start_pos.detach()
                 sampled_target_emb = sampled_target_emb.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
             # Concatenating inputs for relational model
-            #print("batch_pass")
-            i+=1
             pos_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos], dim = 2)
             ## pred_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos, sampled_target_start_pos.unsqueeze(dim = 1).repeat(1, sampled_input_start_pos.shape[1], 1)], dim = 2)
             tgt_cond = sampled_target_start_pos.squeeze(dim = 1)
@@ -360,7 +358,8 @@ class CoSEModel(nn.Module):
         test_loader = get_batch_iterator(self.config.test_dataset_path, test = True)
 
         for epoch in tqdm(range(self.config.num_epochs)):
-            loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step_ae(train_loader, optimizers)
+            #loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step_ae(train_loader, optimizers)
+            loss_ae, loss_pos_pred, loss_emb_pred, loss_total = self.train_step(train_loader, optimizers)
             #TODO valid_loader shape: (n_ejemplos, num_strokesxdiagrama, num_puntos, 2)
         
 

@@ -8,7 +8,7 @@ def random_index_sampling(encoder_out,inputs_start_coord,inputs_end_coord,num_st
     #num_predictive_inputs = 32
     if input_type == "hybrid":
         num_predictive_inputs //= 2
-    #creates indexes to gather from
+    #creates indexes to gather from 
     # -----------------------#
     all_input_emb = []
     all_input_start_pos = []
@@ -115,8 +115,9 @@ def get_random_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_str
     n_inputs = torch.randint(2, min_n_stroke,size = (1,)).to(device).item() #validated with tf
     target_indexes = (torch.rand([num_diagrams]).to(device)*(num_strokes_x_diagram_tensor - 1)).int() #validated with tf
     input_range = torch.arange(start=0, end = padded_max_num_strokes).repeat(num_diagrams,1).to(device) #validated with tf
-    mask = ((input_range)< num_strokes_x_diagram_tensor.reshape(-1,1)) & ((input_range -1) != target_indexes.reshape(-1,1)) #validated with tf
+    mask = ((input_range)< num_strokes_x_diagram_tensor.reshape(-1,1)) & ((input_range) != target_indexes.reshape(-1,1)) #validated with tf
     input_indexes = torch.multinomial((input_range*mask).float().to(device),n_inputs) #validated with tf
+    assert (input_indexes==target_indexes.unsqueeze(dim=1).repeat(1,input_indexes.size(1))).sum() == 0
     return input_indexes, target_indexes, n_inputs
 
 def get_ordered_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_strokes, num_diagrams, min_n_stroke, device, random_target = False):
@@ -128,4 +129,5 @@ def get_ordered_inp_target_pairs(num_strokes_x_diagram_tensor, padded_max_num_st
     input_range = torch.arange(start=0, end = padded_max_num_strokes).repeat(num_diagrams,1).to(device)    
     mask = ((input_range)< target_indexes) & ((input_range)>= start_index)
     input_indexes = input_range.masked_select(mask).reshape(num_diagrams, n_inputs)
-    return input_indexes, target_indexes, n_inputs
+    assert (input_indexes==target_indexes.unsqueeze(dim=1).repeat(1,input_indexes.size(1))).sum() == 0
+    return input_indexes, target_indexes, n_inputsX|    
