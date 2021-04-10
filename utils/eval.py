@@ -65,9 +65,10 @@ def draw_pred_strokes_ar_step(models, stroke_i, context_embeddings, ar_start_pos
     pos_ar_inputs = torch.cat([context_embeddings, torch.tensor(input_pos).to(device)], dim = 2)
     
     # mask for position predictive model
+    look_ahead_mask = generate_square_subsequent_mask(pos_ar_inputs.shape[1]).to(device)
     seq_mask_rel = 1 - (torch.arange(seq_len.max().item()).to(device)[None, :] < seq_len[:, None]).float()
     seq_mask_rel  = seq_mask_rel.masked_fill(seq_mask_rel == 1, float('-inf')).unsqueeze(dim=1).repeat(1,seq_mask_rel.shape[1],1).repeat_interleave(rel_nhead,dim = 0)
-    
+    seq_mask_rel  = torch.maximum(seq_mask_rel, look_ahead_mask).repeat_interleave(rel_nhead, dim = 0)
     # pass to position predictive model
     pos_pred_mu, pos_pred_sigma, pos_pred_pi = position_predictive_model(pos_ar_inputs, seq_len, None, seq_mask_rel)
     
@@ -170,8 +171,6 @@ def qualitative_ae_step(encoder_out, out_eval_parse_input, out_eval_parse_target
     embedding = embedding.reshape(num_strokes.size(0),-1, embedding.size(1))
 
     emb_ = embedding[0][:num_strokes[0]]
-
-    print(emb_.shape)
 
     draw_seq_len = np.array([50]*(emb_.size(0)))
 

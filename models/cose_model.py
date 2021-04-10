@@ -45,12 +45,12 @@ class CoSEModel(nn.Module):
 
     def test_strokes(self, test_loader):
 
-        self.encoder.eval()
-        self.decoder.eval()
-        self.embedding_predictive_model.eval()
-        self.position_predictive_model.eval()
-
-
+        # self.encoder.eval()
+        # self.decoder.eval()
+        # self.embedding_predictive_model.eval()
+        # self.position_predictive_model.eval()
+        #took eval out
+        
         mean_channel, std_channel = get_stats(self.config.stats_path)
 
         eval_loss = AggregateAvg()
@@ -76,11 +76,11 @@ class CoSEModel(nn.Module):
                 with torch.no_grad():
                     # passing inputs to encoding
                     comb_mask, look_ahead_mask, _ = generate_3d_mask(encoder_inputs, strok_len_inputs,self.device, self.config.enc_nhead)
+                    generate_3d_mask(encoder_inputs, strok_len_inputs,self.device, self.config.enc_nhead)
                     encoder_out = self.encoder(encoder_inputs.permute(1,0,2), strok_len_inputs, comb_mask)
                     # quantitative analysis
                     eval_loss, recon_chamfer, pred_chamfer = quantitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_quant_eval, stats_tuple, eval_loss, self.device, self.config.rel_nhead)
                     # qualitative analysis
-                    
                     predicted_batch_stroke, predicted_batch_strat_pos, draw_seq_len = qualitative_eval_step(encoder_out, out_eval_parse_input, out_eval_parse_target, models_qual_eval, stats_tuple, self.device, self.config.rel_nhead, num_extra_pred = 5)
                     # obtain images
                     _, _, _, file_save_path = self.tranform2image(predicted_batch_stroke.detach().cpu(), draw_seq_len, predicted_batch_strat_pos.detach().cpu(), mean_channel, std_channel, predicted_batch_stroke.shape[0], file_save_name="diagrama_n_{}".format(batch_num))
@@ -212,30 +212,20 @@ class CoSEModel(nn.Module):
             t_inputs_reshaped = t_inputs.reshape(-1,1)
             decoder_inp = torch.cat([encoder_out_reshaped, t_inputs_reshaped], dim = 1)
             strokes_out, ae_mu, ae_sigma, ae_pi= self.decoder(decoder_inp)
-            set_seed(randint(0,100))
             # Random/Ordered Sampling
             sampled_input_start_pos, sampled_input_emb,sampled_seq_len_emb,sampled_target_start_pos,sampled_target_emb = random_index_sampling(encoder_out = encoder_out, inputs_start_coord = inputs_start_coord,
                                                                                                                                             inputs_end_coord = inputs_end_coord, num_strokes_x_diagram_tensor = num_strokes_x_diagram_tensor,
                                                                                                                                             input_type =self.config.input_type, num_predictive_inputs = 32,
                                                                                                                                             replace_padding = True, end_positions = False, device = self.device)
 
-            #
-            # pred_inputs, pred_input_seq_len, context_pos, pred_targets, target_pos = random_index_sampling(encoder_out,inputs_start_coord,
-            #                                                                                 inputs_end_coord,num_strokes_x_diagram_tensor,
-            #                                                                                 input_type =self.config.input_type,
-            #                                                                                 num_predictive_inputs = self.config.num_predictive_inputs,
-            #                                                                                 replace_padding = self.config.replace_padding,
-            #                                                                                 end_positions = self.config.end_positions,
-            #                                                                                 device = self.device)
-
-            # Detaching gradients of pred_targets (Teacher forcing)
+            #added shuffle
+            shuffle_rule = torch.randperm(sampled_input_start_pos.size()[0])
             if self.config.stop_predictive_grad:
-                sampled_input_start_pos = sampled_input_start_pos.detach().to(self.device)
-                sampled_input_emb = sampled_input_emb.detach().to(self.device)
-                sampled_seq_len_emb = sampled_seq_len_emb.detach()
-                sampled_target_start_pos = sampled_target_start_pos.detach()
-                sampled_target_emb = sampled_target_emb.detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
-            # Concatenating inputs for relational model
+                sampled_input_start_pos = sampled_input_start_pos[shuffle_rule].detach().to(self.device)
+                sampled_input_emb = sampled_input_emb[shuffle_rule].detach().to(self.device)
+                sampled_seq_len_emb = sampled_seq_len_emb[shuffle_rule].detach()
+                sampled_target_start_pos = sampled_target_start_pos[shuffle_rule].detach()
+                sampled_target_emb = sampled_target_emb[shuffle_rule].detach() #Detaching gradients of pred_inputs (No influence of Relational Model)
             #print("batch_pass")
             pos_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos], dim = 2)
             ## pred_model_inputs = torch.cat([sampled_input_emb, sampled_input_start_pos, sampled_target_start_pos.unsqueeze(dim = 1).repeat(1, sampled_input_start_pos.shape[1], 1)], dim = 2)
